@@ -94,9 +94,9 @@ Style/CaseEquality:
 #
 # Style/ClosingParenthesisIndentation:
 #   Enabled: false
-#
-# Style/ConditionalAssignment:
-#   Enabled: false
+
+Style/ConditionalAssignment:
+  Enabled: false
 
 Style/ConstantName:
   Enabled: false

@@ -1,6 +1,6 @@
-module Docx
+module Xmlish
   class Tag
-    ContentTypes = [:tags, :text, :mixed]
+    ContentTypes = [:tags, :text, :mixed].freeze
 
     # Specifies the XML name of this tag (eg. <title>).
     def self.title(title)
@@ -19,7 +19,11 @@ module Docx
     # Each attribute's xml name will match the +to_s+ of the symbol.
     # To define an attribute with a custom xml name, use +attribute+ instead.
     def self.attributes(*symbols)
-      attrs = symbols.each_with_object({}) { |sym, hash| hash[sym] = sym.to_s.split('_').map(&:capitalize).join }
+      attrs = symbols.each_with_object({}) do |sym, hash|
+        words = sym.to_s.split('_')
+        words[1..-1].map(&:capitalize)
+        hash[sym] = words.join
+      end
       self.tag_attributes.merge! attrs
       symbols.each { |sym| attr_accessor sym }
     end
@@ -31,7 +35,12 @@ module Docx
     #
     # See also: +attributes+
     def self.attribute(symbol, xmlattr = nil)
-      self.tag_attributes[symbol] = xmlattr || symbol.to_s.split('_').map(&:capitalize).join
+      if xmlattr.nil?
+        words = symbol.to_s.split('_')
+        words[1..-1].map(&:capitalize)
+        xmlattr = words.join
+      end
+      self.tag_attributes[symbol] = xmlattr
       attr_accessor symbol
     end
 
@@ -121,7 +130,10 @@ module Docx
         attr_accessor :tag_children
         attr_accessor :tag_sequence
       end
-      subclass.tag_name = subclass.name[0].downcase + subclass.name[1..-1] if subclass.name
+      if subclass.name
+        basename = subclass.name.split('::').last
+        subclass.tag_name = basename[0].downcase + basename[1..-1]
+      end
       subclass.tag_attributes = {}
       subclass.tag_children = {}
       subclass.tag_sequence = []
@@ -150,21 +162,23 @@ module Docx
     end
 
     def get_tag(sym)
-      child = self.tag_children[sym]
+      child = self.class.tag_children[sym]
       raise "undefined tag '#{sym}' for #{self.class.name}" if child.nil?
       self.instance_variable_get(child[:variable])
     end
-    alias_method :get_tags, :get_tags
+    alias get_tags get_tag
+    alias get_content get_tag
 
-    def set_tag(sym, value)
-      child = self.tag_children[sym]
+    def set_tag(sym, _value)
+      child = self.class.tag_children[sym]
       raise "undefined tag '#{sym}' for #{self.class.name}" if child.nil?
       self.instance_variable_set(child[:variable])
     end
-    alias_method :set_tags, :set_tag
+    alias set_tags set_tag
+    alias set_content set_tag
 
     def inspect
-      pretty = "<#{self.class.name}"
+      pretty = "<tag:#{self.class.tag_name}"
       self.class.tag_attributes.each do |symbol, _|
         value = self.send(symbol)
         pretty += " #{symbol}=\"#{value}\"" unless value.nil?

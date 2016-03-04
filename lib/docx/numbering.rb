@@ -5,7 +5,8 @@ module Docx
     include Elements
     include Units
 
-    def table_of_contents
+    def self.table_of_contents
+      halfinch = Inches * 0.5
       W::AbstractNumberDefinition.new({
         levels: ((0...9).map do |level|
           W::LevelDefinition.new({

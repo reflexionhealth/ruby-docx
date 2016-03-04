@@ -1,9 +1,11 @@
-require_relative 'tag'
+require_relative '../xmlish/tag'
+require_relative '../xmlish/encoding'
 
 module Docx
   module Elements
     module W
       Schema = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'.freeze
+      Tag = Xmlish::Tag
 
       def self.define(tag_name, tag_attributes)
         Class.new(Tag) do
@@ -29,24 +31,25 @@ module Docx
         schema Schema
         tag :indent, W.define('ilvl', [:val])
         tag :id, W.define('numId', [:val])
+      end
       class ParagraphProperties < Tag
         title 'pPr'
         schema Schema
         tag :numbering, NumberingProperties
         tag :indent, W.define('ind', [:left, :right, :hanging, :first_line])
-        tag :contextual_spacing, W.define('contextual_spacing', [:val])
+        tag :contextual_spacing, W.define('contextualSpacing', [:val])
         tag :run, RunProperties
       end
       class PageSize < Tag
         title 'pgSz'
         schema Schema
-        attribute :width, 'w'
         attribute :height, 'h'
+        attribute :width, 'w'
       end
       class PageMargins < Tag
         title 'pgMar'
         schema Schema
-        attributes :top, :right, :bottom, :left
+        attributes :bottom, :top, :left, :right
         attributes :header, :footer, :gutter
       end
       class PageNumbering < Tag
@@ -69,25 +72,51 @@ module Docx
 
       # Content
       class Text < Tag
-        title 'text'
+        title 't'
         schema Schema
         attribute :space
         content :text, :text
       end
-
-      class TextRun < Tag
+      class Run < Tag
         title 'r'
         schema Schema
+        attribute :rev_id_deletion, 'rsidDel'
+        attribute :rev_id_run, 'rsidR'
+        attribute :rev_id_properties, 'rsidRPr'
         tag :properties, RunProperties
         tags :content, [Text]
+
+        def initialize(*args)
+          self.rev_id_deletion = '00000000'
+          self.rev_id_run = '00000000'
+          self.rev_id_properties = '00000000'
+          super(*args)
+        end
       end
       class Paragraph < Tag
         title 'p'
         schema Schema
+        attribute :rev_id_paragraph, 'rsidR'
+        attribute :rev_id_deletion, 'rsidDel'
+        attribute :rev_id_properties, 'rsidP'
+        attribute :rev_id_runs_default, 'rsidRDefault'
+        attribute :rev_id_glyph_format, 'rsidRPr'
         tag :properties, ParagraphProperties
-        tags :content, [TextRun]
+        tags :content, [Run]
+
+        def initialize(*args)
+          self.rev_id_paragraph = '00000000'
+          self.rev_id_deletion = '00000000'
+          self.rev_id_properties = '00000000'
+          self.rev_id_runs_default = '00000000'
+          self.rev_id_glyph_format = '00000000'
+          super(*args)
+        end
       end
-      class Table < Tag; title 'tbl'; schema Schema; end
+      class Table < Tag
+        title 'tbl'
+        schema Schema
+      end
       class Body < Tag
         schema Schema
         tags :content, [Paragraph, Table]

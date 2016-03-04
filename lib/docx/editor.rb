@@ -5,6 +5,26 @@ module Docx
   module Editor
     include Units
 
+    Schemas = Hash[
+      'mc' => 'http://schemas.openxmlformats.org/markup-compatibility/2006',
+      'o' => 'urn:schemas-microsoft-com:office:office',
+      'r' => 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+      'm' => 'http://schemas.openxmlformats.org/officeDocument/2006/math',
+      'v' => 'urn:schemas-microsoft-com:vml',
+      'wp' => 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
+      'w10' => 'urn:schemas-microsoft-com:office:word',
+      'w' => 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+      'wne' => 'http://schemas.microsoft.com/office/word/2006/wordml',
+      'sl' => 'http://schemas.openxmlformats.org/schemaLibrary/2006/main',
+      'a' => 'http://schemas.openxmlformats.org/drawingml/2006/main',
+      'pic' => 'http://schemas.openxmlformats.org/drawingml/2006/picture',
+      'c' => 'http://schemas.openxmlformats.org/drawingml/2006/chart',
+      'lc' => 'http://schemas.openxmlformats.org/drawingml/2006/lockedCanvas',
+      'dgm' => 'http://schemas.openxmlformats.org/drawingml/2006/diagram',
+      'wps' => 'http://schemas.microsoft.com/office/word/2010/wordprocessingShape',
+      'wpg' => 'http://schemas.microsoft.com/office/word/2010/wordprocessingGroup',
+    ].freeze
+
     def self.new_document
       doc = Document.new
       doc.document.background.color = 'FFFFFF'
@@ -30,7 +50,8 @@ module Docx
         @numbering_styles = {}
       end
 
-      def define_list_style(style_name, numbering)
+      def define_list_style(style_name, numbering_style)
+        style = numbering_style
         style.id = @numbering.abstract_definitions.length + 1
         @numbering.abstract_definitions.push(style)
 
@@ -64,29 +85,37 @@ module Docx
       end
 
       def add_paragraph
-        paragraph = Paragraph.new(document)
-        document.content.push(paragraph.paragraph)
+        paragraph = Paragraph.new(self)
+        @document.body.content.push(paragraph.paragraph)
         paragraph
       end
     end
 
     class Paragraph
+      include Elements
+
       attr_accessor :document
       attr_accessor :paragraph
 
-      def initialize(document)
-        @document = document
+      def initialize(editor_doc)
+        @document = editor_doc
+        @paragraph = W::Paragraph.new
         # TODO: Should we always set underline for a new paragraph?
-        @paragraph = W::Paragraph.new{properties: {run: {underline: 'none'}}}
+        @paragraph.properties.run.underline.val = 'none'
+        self.set_font_size(Units::Points * 8)
       end
 
       def set_list_style(style_name, indent: 0)
         style = @document.numbering_styles[style_name]
         raise "unknown list style '#{style_name}'" if style.nil?
+        max_indent = style[:abstract].levels.count - 1
+        if indent > max_indent
+          raise "can't use indent #{indent} with list style '#{style_name}' (max #{max_indent})"
+        end
 
         props = @paragraph.properties
         props.numbering.indent.val = 0
-        props.numbering.id = style[:definition].id
+        props.numbering.id.val = style[:definition].id
         # TODO: Is this correct source for this data? Check more example files.
         props.indent.left = style[:abstract].levels[indent].paragraph.indent.left
         props.indent.hanging = style[:abstract].levels[0].paragraph.indent.first_line
@@ -97,19 +126,19 @@ module Docx
 
       def set_font_size(size)
         run = @paragraph.properties.run
-        run.font_size = size
-        run.font_size_complex = size
+        run.font_size.val = size
+        run.font_size_complex.val = size
         run
       end
 
       def add_text(text)
         props = @paragraph.properties.run
-        run = W::TextRun.new({
-          text: {space: 'preserve', text: text},
+        run = W::Run.new({
+          content: [W::Text.new({space: 'preserve', text: text})],
           properties: {
             font_size: props.font_size,
             font_size_complex: props.font_size_complex,
-            right_to_left: 0
+            right_to_left: {val: 0}
           }
         })
         @paragraph.content.push(run)
@@ -118,8 +147,3 @@ module Docx
     end
   end
 end
-
-# include Docx::Units
-# doc = Docx::Document.new
-# doc.set_page_size
-# doc.set_page_margins

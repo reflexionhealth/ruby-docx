@@ -82,14 +82,18 @@ module Docx
 
   module Units
     Base = 1
-    Bases = Size.new(1, [[:bases, 1]])
-    Tab = 16*4
-    Tabs = Size.new(16, [[:tabs, 1]])
+    Bases = Size.new(Base, [[:bases, 1]])
+    Point = 2
+    Points = Size.new(Point, [[:points, 1]])
+    Tab = 16 * 4
+    Tabs = Size.new(Tab, [[:tabs, 1]])
     Inch = 1440
-    Inches = Size.new(1 * Inch, [[:inches, 1]])
+    Inches = Size.new(Inch, [[:inches, 1]])
   end
 
   module NumericExt
+    def point; self.points; end
+    def points; Docx::Size.new(self * Units::Points, [[:points, self]]); end
     def tab; self.tabs; end
     def tabs; Docx::Size.new(self * Units::Tab, [[:tabs, self]]); end
     def inch; self.inches; end
