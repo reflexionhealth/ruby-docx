@@ -1,0 +1,6 @@
+require 'docx/gem'
+require 'docx/tag'
+require 'docx/units'
+require 'docx/elements'
+require 'docx/numbering'
+require 'docx/editor'

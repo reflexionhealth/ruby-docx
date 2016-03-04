@@ -1,0 +1,207 @@
+Metrics/LineLength:
+  Max: 120
+
+Style/AccessModifierIndentation:
+  EnforcedStyle: outdent
+
+# Style/AlignHash:
+#   EnforcedLastArgumentHashStyle: ignore_implicit
+#
+# Style/CaseIndentation:
+#   IndentWhenRelativeTo: end
+
+Style/EmptyLineBetweenDefs:
+  AllowAdjacentOneLineDefs: true
+
+# Style/Encoding:
+#   Enabled: true
+#
+# Style/ExtraSpacing:
+#   AllowForAlignment: true
+
+Style/IndentArray:
+  EnforcedStyle: consistent
+
+Style/IndentHash:
+  EnforcedStyle: consistent
+
+# Style/MethodCalledOnDoEndBlock:
+#   Enabled: true
+#
+# Style/MultilineMethodCallIndentation:
+#   Enabled: indented
+
+Style/Semicolon:
+  AllowAsExpressionSeparator: true
+
+# Style/SignalException:
+#   EnforcedStyle: only_raise
+#
+# Style/SpaceAroundOperators:
+#   AllowForAlignment: true
+#
+# Style/TrivialAccessors:
+#   ExactNameMatch: true
+
+# Disabled Cops
+Metrics/AbcSize:
+  Enabled: false
+
+Metrics/BlockNesting:
+  Enabled: false
+
+Metrics/ClassLength:
+  Enabled: false
+
+Metrics/CyclomaticComplexity:
+  Enabled: false
+
+Metrics/MethodLength:
+  Enabled: false
+
+Metrics/ModuleLength:
+ Enabled: false
+
+Metrics/ParameterLists:
+  Enabled: false
+
+Metrics/PerceivedComplexity:
+  Enabled: false
+
+# Performance/FixedSize:
+#   Enabled: false # in general, this is used to increase program correctness
+
+Style/AccessorMethodName:
+  Enabled: false # this cop is too dumb to know whether a method is an accessor
+
+Style/AndOr:
+  Enabled: false
+
+Style/AsciiComments:
+  Enabled: false
+
+# Style/BlockComments:
+#   Enabled: false
+
+Style/BracesAroundHashParameters:
+  Enabled: false
+
+Style/CaseEquality:
+  Enabled: false
+
+# Style/ClassVars:
+#   Enabled: false
+#
+# Style/ClosingParenthesisIndentation:
+#   Enabled: false
+#
+# Style/ConditionalAssignment:
+#   Enabled: false
+
+Style/ConstantName:
+  Enabled: false
+
+# Style/DeprecatedHashMethods:
+#   Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+# Style/DoubleNegation:
+#   Enabled: false
+#
+# Style/EachWithObject:
+#   Enabled: false
+#
+# Style/EmptyLinesAroundAccessModifier:
+#   Enabled: false
+#
+# Style/EmptyLinesAroundClassBody:
+#   Enabled: false
+#
+# Style/EmptyLinesAroundModuleBody:
+#   Enabled: false
+#
+# Style/Encoding:
+#   Enabled: false
+#
+# Style/GuardClause:
+#   Enabled: false
+#
+# Style/IfUnlessModifier:
+#   Enabled: false
+#
+# Style/IndentationConsistency:
+#   Enabled: false
+#
+# Style/IndentHash:
+#   Enabled: false
+#
+# Style/Lambda:
+#   Enabled: false
+#
+# Style/LambdaCall:
+#   Enabled: false
+#
+# Style/MultilineOperationIndentation:
+#   Enabled: false
+#
+# Style/NumericLiterals:
+#   Enabled: False
+#
+# Style/Next:
+#   Enabled: false
+#
+# Style/NonNilCheck:
+#   Enabled: false
+#
+# Style/Not:
+#   Enabled: false
+#
+# Style/ParenthesesAroundCondition:
+#   Enabled: false
+#
+# Style/PredicateName:
+#   Enabled: false
+
+Style/RedundantParentheses:
+  Enabled: false
+
+# Style/RedundantReturn:
+#   Enabled: false
+
+Style/RedundantSelf:
+  Enabled: false
+
+# Style/RegexpLiteral:
+#   Enabled: false
+#
+# Style/RescueModifier:
+#   Enabled: false
+
+Style/ParallelAssignment:
+  Enabled: false
+
+# Style/SingleLineBlockParams:
+#   Enabled: false
+
+Style/SingleLineMethods:
+  Enabled: false
+
+# Style/SpaceBeforeFirstArg:
+#   Enabled: false
+#
+# Style/SpaceBeforeBlockBraces:
+#   Enabled: false
+
+Style/SpaceInsideHashLiteralBraces:
+  Enabled: false
+
+Style/SpaceInsideRangeLiteral:
+  Enabled: false
+
+# Style/TrailingUnderscoreVariable:
+#   Enabled: false
+#
+# Style/WordArray:
+#   Enabled: false
