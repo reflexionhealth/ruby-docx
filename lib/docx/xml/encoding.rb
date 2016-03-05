@@ -1,5 +1,13 @@
 module Docx
   module Xml
+    def self.escape(text)
+      text.gsub('&', '&amp;').gsub('<', '&lt;').gsub('>', '&gt;')
+    end
+
+    def self.escape_attribute(text)
+      text.gsub('&', '&amp;').gsub('\'', '&apos;').gsub('"', '&quot;')
+    end
+
     def self.dump(tag, root = false, standalone: false, xmlns: nil, namespaces: {})
       buffer = StringIO.new
       encoder = Encoder.new(buffer, xmlns: xmlns, namespaces: namespaces)
@@ -60,12 +68,12 @@ module Docx
         write("<#{prefix}#{klass.tag_type}")
         if xmlns_attrs
           write(" xmlns=\"#{@xmlns}\"") unless @xmlns.nil?
-          @namespaces.each { |pre, ns| write(" xmlns:#{pre}=\"#{ns}\"") }
+          @namespaces.each { |pre, ns| write(" xmlns:#{pre}=\"#{Xml.escape_attribute(ns)}\"") }
         end
         klass.tag_attributes.each do |symbol, info|
           value = tag.send(symbol)
           attr_prefix = info[:prefix] ? "#{info[:prefix]}:" : prefix
-          write(" #{attr_prefix}#{info[:name]}=\"#{value}\"") unless value.nil?
+          write(" #{attr_prefix}#{info[:name]}=\"#{Xml.escape_attribute(value.to_s)}\"") unless value.nil?
         end
 
         # collect inner tags/content
@@ -129,7 +137,7 @@ module Docx
         else
           write('>')
           # write inner xml
-          content.each { |item| item.is_a?(Tag) ? recurse(item) : write(item.to_s) }
+          content.each { |item| item.is_a?(Tag) ? recurse(item) : write(Xml.escape(item.to_s)) }
           # write closing tag
           write("</#{prefix}#{klass.tag_type}>")
         end
