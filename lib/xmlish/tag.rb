@@ -2,14 +2,14 @@ module Xmlish
   class Tag
     ContentTypes = [:tags, :text, :mixed].freeze
 
-    # Specifies the XML name of this tag (eg. <title>).
-    def self.title(title)
-      self.tag_name = title
+    # Specifies the XML name of this tag (eg. <type>).
+    def self.type(type)
+      self.tag_type = type
     end
 
-    # Specifies the XML schema of this tag (eg. http://schemas.openxmlformats.org/drawingml/2006/main)
-    def self.schema(schema)
-      self.tag_schema = schema
+    # Specifies the XML namespace of this tag (eg. http://schemas.openxmlformats.org/drawingml/2006/main)
+    def self.namespace(namespace)
+      self.tag_namespace = namespace
     end
 
     # Specifies new XML attributes for this tag.
@@ -21,7 +21,7 @@ module Xmlish
     def self.attributes(*symbols)
       attrs = symbols.each_with_object({}) do |sym, hash|
         words = sym.to_s.split('_')
-        words[1..-1].map(&:capitalize)
+        words[1..-1].each_with_index { |word, i| words[i + 1] = word.capitalize }
         hash[sym] = words.join
       end
       self.tag_attributes.merge! attrs
@@ -37,7 +37,7 @@ module Xmlish
     def self.attribute(symbol, xmlattr = nil)
       if xmlattr.nil?
         words = symbol.to_s.split('_')
-        words[1..-1].map(&:capitalize)
+        words[1..-1].each_with_index { |word, i| words[i + 1] = word.capitalize }
         xmlattr = words.join
       end
       self.tag_attributes[symbol] = xmlattr
@@ -52,7 +52,7 @@ module Xmlish
     # The options for calling content are :tags, :text, or :mixed
     def self.content(symbol, type)
       unless [:text, :mixed, :tags].include?(type)
-        raise "unknown content type '#{type}', must be :text, :tags, or :mixed"
+        raise ArgumentError, "unknown content type '#{type}'; must be :text, :tags, or :mixed"
       end
       variable = "@#{symbol}".to_sym
       self.tag_children[symbol] = {type: :content, variable: variable, content: type}
@@ -124,15 +124,15 @@ module Xmlish
 
     def self.inherited(subclass)
       subclass.singleton_class.instance_eval do
-        attr_accessor :tag_name
-        attr_accessor :tag_schema
+        attr_accessor :tag_type
+        attr_accessor :tag_namespace
         attr_accessor :tag_attributes
         attr_accessor :tag_children
         attr_accessor :tag_sequence
       end
       if subclass.name
         basename = subclass.name.split('::').last
-        subclass.tag_name = basename[0].downcase + basename[1..-1]
+        subclass.tag_type = basename[0].downcase + basename[1..-1]
       end
       subclass.tag_attributes = {}
       subclass.tag_children = {}
@@ -156,14 +156,14 @@ module Xmlish
             self.send("#{name}=", value)
           end
         else
-          raise "unknown attribute or tag '#{name}' for #{self.class.name}"
+          raise NameError, "unknown attribute or tag '#{name}' for #{self.class.name}"
         end
       end
     end
 
     def get_tag(sym)
       child = self.class.tag_children[sym]
-      raise "undefined tag '#{sym}' for #{self.class.name}" if child.nil?
+      raise NameError, "undefined tag '#{sym}' for #{self.class.name}" if child.nil?
       self.instance_variable_get(child[:variable])
     end
     alias get_tags get_tag
@@ -171,14 +171,14 @@ module Xmlish
 
     def set_tag(sym, _value)
       child = self.class.tag_children[sym]
-      raise "undefined tag '#{sym}' for #{self.class.name}" if child.nil?
+      raise NameError, "undefined tag '#{sym}' for #{self.class.name}" if child.nil?
       self.instance_variable_set(child[:variable])
     end
     alias set_tags set_tag
     alias set_content set_tag
 
     def inspect
-      pretty = "<tag:#{self.class.tag_name}"
+      pretty = "<tag:#{self.class.tag_type}"
       self.class.tag_attributes.each do |symbol, _|
         value = self.send(symbol)
         pretty += " #{symbol}=\"#{value}\"" unless value.nil?
