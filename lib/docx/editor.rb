@@ -177,9 +177,10 @@ module Docx
 
       def initialize(editor_doc)
         @document = editor_doc
-        @paragraph = W::Paragraph.new
-        # TODO: Should we always set underline for a new paragraph?
-        @paragraph.properties.run.underline.val = 'none'
+        @paragraph = W::Paragraph.new({
+          properties: {contextual_spacing: {val: 0}},
+          content: [W::Run.new(properties: {right_to_left: {val: 0}})]
+        })
       end
 
       def set_list_style(style_name, indent: 0)
@@ -196,8 +197,7 @@ module Docx
         # TODO: Is this correct source for this data? Check more example files.
         props.indent.left = style[:abstract].levels[indent].paragraph.indent.left
         props.indent.hanging = Units::Inches * 0.5
-        # TODO: Should these be the default for paragraphs, or added as part of +set_list_style+?
-        props.contextual_spacing.val = 1
+        props.run.underline.val = 'none' if indent > 0
         props
       end
 
@@ -209,15 +209,16 @@ module Docx
       end
 
       def add_text(text)
-        props = @paragraph.properties.run
         run = W::Run.new({
           content: [W::Text.new({space: 'preserve', text: text})],
-          properties: {
-            font_size: props.font_size,
-            font_size_complex: props.font_size_complex,
-            right_to_left: {val: 0}
-          }
+          properties: {right_to_left: {val: 0}}
         })
+        default = @paragraph.properties.run
+        run.properties.font_size = default.get_tag(:font_size) # preserves nil
+        run.properties.font_size_complex = default.get_tag(:font_size_complex)
+
+        prev = @paragraph.content.last
+        @paragraph.content.pop if prev.is_a? W::Run and prev.content.empty?
         @paragraph.content.push(run)
         run
       end
