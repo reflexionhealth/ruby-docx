@@ -13,10 +13,10 @@ module Docx
             level: level,
             start: {val: 1},
             format: {val: 'decimal'},
-            text: {val: (0...level).map { |x| "%#{x + 1}." }.join},
+            text: {val: (1..level + 1).map { |x| "%#{x}." }.join},
             justify: {val: 'right'},
             paragraph: {indent: {left: halfinch * (level + 1), first_line: halfinch * (level + 0.5)}},
-            run: {underline: 'none'}
+            run: {underline: {val: 'none'}}
           })
         end)
       })

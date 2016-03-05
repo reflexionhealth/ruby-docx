@@ -1,11 +1,14 @@
+require_relative '../xmlish/encoding'
 require_relative 'elements'
+require_relative 'styles'
 require_relative 'units'
 
 module Docx
   module Editor
+    include Elements
     include Units
 
-    Schemas = Hash[
+    Namespaces = Hash[
       'mc' => 'http://schemas.openxmlformats.org/markup-compatibility/2006',
       'o' => 'urn:schemas-microsoft-com:office:office',
       'r' => 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
@@ -31,6 +34,16 @@ module Docx
       doc.set_page_size(width: Inches * 8.5, height: Inches * 11)
       doc.set_page_margins(top: Inches * 1, bottom: Inches * 1, left: Inches * 1, right: Inches * 1)
       doc.set_page_numbering(start: 1)
+      doc.font_table.fonts.push(Elements::W::Font.new(name: 'Arial'))
+      doc.settings.display_background_shapes.val = 1
+      doc.settings.default_tab_stop.val = Units::Inches * 0.5
+      doc.styles.default = Styles.default
+      doc.styles.styles = [
+        Styles.paragraph, Styles.table,
+        Styles.h1, Styles.h2, Styles.h3,
+        Styles.h4, Styles.h5, Styles.h6,
+        Styles.type, Styles.subtitle
+      ]
       doc
     end
 
@@ -39,15 +52,21 @@ module Docx
 
       attr_accessor :filename
       attr_accessor :document
+      attr_accessor :font_table
       attr_accessor :numbering
       attr_accessor :numbering_styles
-      attr_accessor :styles
       attr_accessor :settings
+      attr_accessor :styles
 
       def initialize
         @document = W::Document.new
+        @font_table = W::FontTable.new
         @numbering = W::Numbering.new
         @numbering_styles = {}
+
+        compat = {val: 14, name: 'compatibilityMode', uri: 'http://schemas.microsoft.com/office/word'}
+        @settings = W::Settings.new({compatibility: {setting: compat}})
+        @styles = W::Styles.new
       end
 
       def define_list_style(style_name, numbering_style)
@@ -107,10 +126,10 @@ module Docx
 
       def set_list_style(style_name, indent: 0)
         style = @document.numbering_styles[style_name]
-        raise "unknown list style '#{style_name}'" if style.nil?
+        raise KeyError, "unknown list style '#{style_name}'" if style.nil?
         max_indent = style[:abstract].levels.count - 1
         if indent > max_indent
-          raise "can't use indent #{indent} with list style '#{style_name}' (max #{max_indent})"
+          raise IndexError, "can't use indent #{indent} with list style '#{style_name}' (max #{max_indent})"
         end
 
         props = @paragraph.properties
@@ -118,7 +137,7 @@ module Docx
         props.numbering.id.val = style[:definition].id
         # TODO: Is this correct source for this data? Check more example files.
         props.indent.left = style[:abstract].levels[indent].paragraph.indent.left
-        props.indent.hanging = style[:abstract].levels[0].paragraph.indent.first_line
+        props.indent.hanging = Units::Inches * 0.5
         # TODO: Should these be the default for paragraphs, or added as part of +set_list_style+?
         props.contextual_spacing.val = 1
         props

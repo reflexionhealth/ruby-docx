@@ -1,85 +1,109 @@
 require_relative '../xmlish/tag'
-require_relative '../xmlish/encoding'
 
 module Docx
   module Elements
+    module R
+      Namespace = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'.freeze
+      Tag = Xmlish::Tag
+    end
+
     module W
-      Schema = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'.freeze
+      Namespace = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'.freeze
       Tag = Xmlish::Tag
 
-      def self.define(tag_name, tag_attributes)
+      # NOTE: When defining attributes, ensure they are defined in the same
+      # order as they are serialized when downloading a .docx from Google Docs.
+      def self.define(tag_type, tag_attributes)
         Class.new(Tag) do
-          title(tag_name)
-          schema(Schema)
-          attributes(*tag_attributes)
+          type tag_type
+          namespace Namespace
+          attributes *tag_attributes
         end
       end
 
       # Properties
+      class RunFonts < Tag
+        type 'rFonts'
+        namespace Namespace
+        attribute :ascii
+        attribute :complex, 'cs'
+        attribute :east_asia
+        attribute :ansi, 'hAnsi'
+      end
       class RunProperties < Tag
-        title 'rPr'
-        schema Schema
+        type 'rPr'
+        namespace Namespace
+        tag :fonts, RunFonts
         tag :bold, W.define('b', [:val])
         tag :italic, W.define('i', [:val])
+        tag :small_caps, W.define('smallCaps', [:val])
+        tag :strike, W.define('strike', [:val])
+        tag :color, W.define('color', [:val])
         tag :font_size, W.define('sz', [:val])
         tag :font_size_complex, W.define('szCs', [:val])
-        tag :underline, W.define('u', [:val, :color])
+        tag :underline, W.define('u', [:val])
+        tag :vertical_align, W.define('vertAlign', [:val])
         tag :right_to_left, W.define('rtl', [:val])
       end
       class NumberingProperties < Tag
-        title 'numPr'
-        schema Schema
+        type 'numPr'
+        namespace Namespace
         tag :indent, W.define('ilvl', [:val])
         tag :id, W.define('numId', [:val])
       end
       class ParagraphProperties < Tag
-        title 'pPr'
-        schema Schema
+        type 'pPr'
+        namespace Namespace
+        tag :keep_next, W.define('keepNext', [:val])
+        tag :keep_lines, W.define('keepLines', [:val])
+        tag :widow_control, W.define('widowControl', [:val])
         tag :numbering, NumberingProperties
+        tag :spacing, W.define('spacing', [:after, :before, :bottom, :line, :line_rule])
         tag :indent, W.define('ind', [:left, :right, :hanging, :first_line])
         tag :contextual_spacing, W.define('contextualSpacing', [:val])
+        tag :justify, W.define('jc', [:val])
         tag :run, RunProperties
       end
       class PageSize < Tag
-        title 'pgSz'
-        schema Schema
+        type 'pgSz'
+        namespace Namespace
         attribute :height, 'h'
         attribute :width, 'w'
       end
       class PageMargins < Tag
-        title 'pgMar'
-        schema Schema
+        type 'pgMar'
+        namespace Namespace
         attributes :bottom, :top, :left, :right
         attributes :header, :footer, :gutter
       end
       class PageNumbering < Tag
-        title 'pgNumType'
-        schema Schema
+        type 'pgNumType'
+        namespace Namespace
         attribute :start
       end
       class SectionProperties < Tag
-        title 'sectPr'
-        schema Schema
+        type 'sectPr'
+        namespace Namespace
         tag :page_size, PageSize
         tag :page_margins, PageMargins
         tag :page_numbering, PageNumbering
       end
       class Background < Tag
-        schema Schema
+        namespace Namespace
         attribute :color
         content :tags, :tags
       end
 
-      # Content
+      # Document
       class Text < Tag
-        title 't'
-        schema Schema
+        type 't'
+        namespace Namespace
         attribute :space
         content :text, :text
       end
       class Run < Tag
-        title 'r'
-        schema Schema
+        type 'r'
+        namespace Namespace
         attribute :rev_id_deletion, 'rsidDel'
         attribute :rev_id_run, 'rsidR'
         attribute :rev_id_properties, 'rsidRPr'
@@ -94,8 +118,8 @@ module Docx
         end
       end
       class Paragraph < Tag
-        title 'p'
-        schema Schema
+        type 'p'
+        namespace Namespace
         attribute :rev_id_paragraph, 'rsidR'
         attribute :rev_id_deletion, 'rsidDel'
         attribute :rev_id_properties, 'rsidP'
@@ -114,26 +138,35 @@ module Docx
         end
       end
       class Table < Tag
-        title 'tbl'
-        schema Schema
+        type 'tbl'
+        namespace Namespace
       end
       class Body < Tag
-        schema Schema
+        namespace Namespace
         tags :content, [Paragraph, Table]
         tag :properties, SectionProperties
       end
-
-      # Document
       class Document < Tag
-        schema W::Schema
+        namespace W::Namespace
         tag :background, W::Background
         tag :body, W::Body
       end
 
-      # (List) Numbering
+      # Fonts
+      class Font < Tag
+        namespace W::Namespace
+        attribute :name
+      end
+      class FontTable < Tag
+        type 'fonts'
+        namespace W::Namespace
+        tags :fonts, Font
+      end
+
+      # Numbering (Lists)
       class LevelDefinition < Tag
-        title 'lvl'
-        schema W::Schema
+        type 'lvl'
+        namespace W::Namespace
         attribute :level, 'ilvl'
         tag :start, W.define('start', [:val])
         tag :format, W.define('numFmt', [:val])
@@ -143,21 +176,72 @@ module Docx
         tag :run, RunProperties
       end
       class AbstractNumberDefinition < Tag
-        title 'abstractNum'
-        schema W::Schema
+        type 'abstractNum'
+        namespace W::Namespace
         attribute :id, 'abstractNumId'
         tags :levels, LevelDefinition, max: 9
       end
       class NumberDefinition < Tag
-        title 'num'
-        schema W::Schema
+        type 'num'
+        namespace W::Namespace
         attribute :id, 'numId'
         tag :abstract_id, W.define('abstractNumId', [:val])
       end
       class Numbering < Tag
-        schema W::Schema
+        namespace W::Namespace
         tags :abstract_definitions, AbstractNumberDefinition
         tags :definitions, NumberDefinition
+      end
+
+      # Settings
+      class Compatibility < Tag
+        type 'compat'
+        namespace W::Namespace
+        # NOTE: The primary schema reference I'm using doesn't list this element.
+        # See http://www.datypic.com/sc/ooxml/s-wml.xsd.html.
+        # According to the Microsoft Open XML SDK reference, this tag is always last.
+        tag :setting, W.define('compatSetting', [:val, :name, :uri])
+      end
+      class Settings < Tag
+        namespace W::Namespace
+        tag :display_background_shapes, W.define('displayBackgroundShape', [:val])
+        tag :default_tab_stop, W.define('defaultTabStop', [:val])
+        tag :compatibility, Compatibility
+      end
+
+      # Styles
+      class DefaultRun < Tag
+        type 'rPrDefault'
+        namespace W::Namespace
+        tag :properties, RunProperties
+      end
+      class DefaultParagraph < Tag
+        type 'pPrDefault'
+        namespace W::Namespace
+        tag :properties, ParagraphProperties
+      end
+      class DefaultProperties < Tag
+        type 'docDefaults'
+        namespace W::Namespace
+        tag :run, DefaultRun
+        tag :paragraph, DefaultParagraph
+      end
+      class Style < Tag
+        namespace W::Namespace
+        attribute :type
+        attribute :id, 'styleId'
+        attribute :default
+        tag :name, W.define('name', [:val])
+        tag :aliases, W.define('aliases', [:val])
+        tag :based_on, W.define('basedOn', [:val])
+        tag :next, W.define('next', [:val])
+        tag :paragraph, ParagraphProperties
+        tag :run, RunProperties
+      end
+      class Styles < Tag
+        namespace W::Namespace
+        tag :default, DefaultProperties
+        tags :styles, Style
       end
     end
   end

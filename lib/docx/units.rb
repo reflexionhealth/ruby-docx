@@ -52,6 +52,15 @@ module Docx
       Size.new((value * other).round, scaled_parts)
     end
 
+    def /(other)
+      scaled_parts = @parts.map do |unit, amount|
+        scaled = amount / other
+        scaled = scaled.to_i if scaled.is_a? Float and scaled == scaled.to_i.to_f
+        [unit, scaled]
+      end
+      Size.new((value / other).round, scaled_parts)
+    end
+
     # Returns +true+ if +other+ is also a Size instance, which has the same parts as this one.
     def eql?(other)
       Size === other && other.value.eql?(value)
@@ -92,8 +101,7 @@ module Docx
   end
 
   module NumericExt
-    def point; self.points; end
-    def points; Docx::Size.new(self * Units::Points, [[:points, self]]); end
+    def pt; Docx::Size.new(self * Units::Point, [[:points, self]]); end
     def tab; self.tabs; end
     def tabs; Docx::Size.new(self * Units::Tab, [[:tabs, self]]); end
     def inch; self.inches; end
