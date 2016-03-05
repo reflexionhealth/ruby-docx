@@ -48,9 +48,9 @@ module Docx
       # order as they are serialized when downloading a .docx from Google Docs.
       def self.define(tag_type, tag_attributes)
         Class.new(Tag) do
-          type tag_type
-          namespace Namespace
-          attributes *tag_attributes
+          type(tag_type)
+          namespace(Namespace)
+          attributes(*tag_attributes)
         end
       end
 

@@ -112,10 +112,10 @@ Style/Documentation:
 #
 # Style/EachWithObject:
 #   Enabled: false
-#
-# Style/EmptyLinesAroundAccessModifier:
-#   Enabled: false
-#
+
+Style/EmptyLinesAroundAccessModifier:
+  Enabled: false
+
 # Style/EmptyLinesAroundClassBody:
 #   Enabled: false
 #

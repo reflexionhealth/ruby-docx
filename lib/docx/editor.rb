@@ -115,7 +115,7 @@ module Docx
           Xml.write_file("#{tmpdir}/fontTable.xml", @font_table, standalone: true, namespaces: Namespaces)
           Xml.write_file("#{tmpdir}/numbering.xml", @numbering, standalone: true, namespaces: Namespaces)
           Xml.write_file("#{tmpdir}/styles.xml", @styles, standalone: true, namespaces: Namespaces)
-          Zip::Archive.open(@filename, Zip::CREATE|Zip::TRUNC) do |zip|
+          Zip::Archive.open(@filename, Zip::CREATE | Zip::TRUNC) do |zip|
             zip.add_file('word/numbering.xml', "#{tmpdir}/numbering.xml")
             zip.add_file('word/settings.xml', "#{tmpdir}/settings.xml")
             zip.add_file('word/fontTable.xml', "#{tmpdir}/fontTable.xml")
