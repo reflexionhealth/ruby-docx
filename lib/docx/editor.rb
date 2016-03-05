@@ -1,4 +1,4 @@
-require_relative '../xmlish/encoding'
+require_relative 'xml/encoding'
 require_relative 'elements'
 require_relative 'styles'
 require_relative 'units'
@@ -107,14 +107,14 @@ module Docx
         ]})
 
         Dir.mktmpdir do |tmpdir|
-          Xmlish.write_file("#{tmpdir}/[Content_Types].xml", types, xmlns: Typ::Namespace, standalone: true)
-          Xmlish.write_file("#{tmpdir}/.rels", outer, xmlns: Rel::Namespace)
-          Xmlish.write_file("#{tmpdir}/document.xml.rels", inner, xmlns: Rel::Namespace, standalone: true)
-          Xmlish.write_file("#{tmpdir}/document.xml", @document, namespaces: Namespaces)
-          Xmlish.write_file("#{tmpdir}/settings.xml", @settings, standalone: true, namespaces: Namespaces)
-          Xmlish.write_file("#{tmpdir}/fontTable.xml", @font_table, standalone: true, namespaces: Namespaces)
-          Xmlish.write_file("#{tmpdir}/numbering.xml", @numbering, standalone: true, namespaces: Namespaces)
-          Xmlish.write_file("#{tmpdir}/styles.xml", @styles, standalone: true, namespaces: Namespaces)
+          Xml.write_file("#{tmpdir}/[Content_Types].xml", types, xmlns: Typ::Namespace, standalone: true)
+          Xml.write_file("#{tmpdir}/.rels", outer, xmlns: Rel::Namespace)
+          Xml.write_file("#{tmpdir}/document.xml.rels", inner, xmlns: Rel::Namespace, standalone: true)
+          Xml.write_file("#{tmpdir}/document.xml", @document, namespaces: Namespaces)
+          Xml.write_file("#{tmpdir}/settings.xml", @settings, standalone: true, namespaces: Namespaces)
+          Xml.write_file("#{tmpdir}/fontTable.xml", @font_table, standalone: true, namespaces: Namespaces)
+          Xml.write_file("#{tmpdir}/numbering.xml", @numbering, standalone: true, namespaces: Namespaces)
+          Xml.write_file("#{tmpdir}/styles.xml", @styles, standalone: true, namespaces: Namespaces)
           Zip::Archive.open(@filename, Zip::CREATE|Zip::TRUNC) do |zip|
             zip.add_file('word/numbering.xml', "#{tmpdir}/numbering.xml")
             zip.add_file('word/settings.xml', "#{tmpdir}/settings.xml")

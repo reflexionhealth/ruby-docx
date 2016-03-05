@@ -1,22 +1,22 @@
-require_relative '../xmlish/tag'
+require_relative 'xml/tag'
 
 module Docx
   module Elements
     module Typ
       Namespace = 'http://schemas.openxmlformats.org/package/2006/content-types'.freeze
-      class Default < Xmlish::Tag
+      class Default < Xml::Tag
         type 'Default'
         namespace Namespace
         attribute :content, 'ContentType'
         attribute :ext, 'Extension'
       end
-      class Override < Xmlish::Tag
+      class Override < Xml::Tag
         type 'Override'
         namespace Namespace
         attribute :content, 'ContentType'
         attribute :path, 'PartName'
       end
-      class Types < Xmlish::Tag
+      class Types < Xml::Tag
         type 'Types'
         namespace Namespace
         tags :defaults, Default
@@ -26,14 +26,14 @@ module Docx
 
     module Rel
       Namespace = 'http://schemas.openxmlformats.org/package/2006/relationships'.freeze
-      class Relationship < Xmlish::Tag
+      class Relationship < Xml::Tag
         type 'Relationship'
         namespace Namespace
         attribute :id, 'Id'
         attribute :type, 'Type'
         attribute :target, 'Target'
       end
-      class Relationships < Xmlish::Tag
+      class Relationships < Xml::Tag
         type 'Relationships'
         namespace Namespace
         tags :rels, Relationship
@@ -42,7 +42,7 @@ module Docx
 
     module W
       Namespace = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'.freeze
-      Tag = Xmlish::Tag
+      Tag = Xml::Tag
 
       # NOTE: When defining attributes, ensure they are defined in the same
       # order as they are serialized when downloading a .docx from Google Docs.
