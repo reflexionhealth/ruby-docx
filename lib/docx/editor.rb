@@ -108,7 +108,7 @@ module Docx
 
         Dir.mktmpdir do |tmpdir|
           Xml.write_file("#{tmpdir}/[Content_Types].xml", types, xmlns: Typ::Namespace, standalone: true)
-          Xml.write_file("#{tmpdir}/.rels", outer, xmlns: Rel::Namespace)
+          Xml.write_file("#{tmpdir}/.rels", outer, xmlns: Rel::Namespace, standalone: true)
           Xml.write_file("#{tmpdir}/document.xml.rels", inner, xmlns: Rel::Namespace, standalone: true)
           Xml.write_file("#{tmpdir}/document.xml", @document, namespaces: Namespaces)
           Xml.write_file("#{tmpdir}/settings.xml", @settings, standalone: true, namespaces: Namespaces)
@@ -192,11 +192,12 @@ module Docx
         end
 
         props = @paragraph.properties
+        props.contextual_spacing.val = 1
         props.numbering.indent.val = indent
         props.numbering.id.val = style[:definition].id
         # TODO: Is this correct source for this data? Check more example files.
         props.indent.left = style[:abstract].levels[indent].paragraph.indent.left
-        props.indent.hanging = Units::Inches * 0.5
+        props.indent.hanging = Units::Inches / 4
         props.run.underline.val = 'none' if indent > 0
         props
       end
