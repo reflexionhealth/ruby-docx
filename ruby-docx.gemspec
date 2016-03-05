@@ -15,6 +15,7 @@ END
   gems.require_path = 'lib'
 
   gems.required_ruby_version = '>= 2.2.0'
+  gems.add_dependency 'zipruby', '~> 0.3.6'
   gems.add_development_dependency 'rubocop', '~> 0.37.0'
 
   # Gem builder boilerplate

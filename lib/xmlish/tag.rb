@@ -22,7 +22,7 @@ module Xmlish
       attrs = symbols.each_with_object({}) do |sym, hash|
         words = sym.to_s.split('_')
         words[1..-1].each_with_index { |word, i| words[i + 1] = word.capitalize }
-        hash[sym] = words.join
+        hash[sym] = {name: words.join}
       end
       self.tag_attributes.merge! attrs
       symbols.each { |sym| attr_accessor sym }
@@ -34,13 +34,14 @@ module Xmlish
     #     attribute :revision_id, 'rsid'
     #
     # See also: +attributes+
-    def self.attribute(symbol, xmlattr = nil)
+    def self.attribute(symbol, xmlattr = nil, prefix: nil)
       if xmlattr.nil?
         words = symbol.to_s.split('_')
         words[1..-1].each_with_index { |word, i| words[i + 1] = word.capitalize }
         xmlattr = words.join
       end
-      self.tag_attributes[symbol] = xmlattr
+      self.tag_attributes[symbol] = {name: xmlattr}
+      self.tag_attributes[symbol][:prefix] = prefix if prefix
       attr_accessor symbol
     end
 

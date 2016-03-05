@@ -2,9 +2,42 @@ require_relative '../xmlish/tag'
 
 module Docx
   module Elements
-    module R
-      Namespace = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'.freeze
-      Tag = Xmlish::Tag
+    module Typ
+      Namespace = 'http://schemas.openxmlformats.org/package/2006/content-types'.freeze
+      class Default < Xmlish::Tag
+        type 'Default'
+        namespace Namespace
+        attribute :content, 'ContentType'
+        attribute :ext, 'Extension'
+      end
+      class Override < Xmlish::Tag
+        type 'Override'
+        namespace Namespace
+        attribute :content, 'ContentType'
+        attribute :path, 'PartName'
+      end
+      class Types < Xmlish::Tag
+        type 'Types'
+        namespace Namespace
+        tags :defaults, Default
+        tags :overrides, Override
+      end
+    end
+
+    module Rel
+      Namespace = 'http://schemas.openxmlformats.org/package/2006/relationships'.freeze
+      class Relationship < Xmlish::Tag
+        type 'Relationship'
+        namespace Namespace
+        attribute :id, 'Id'
+        attribute :type, 'Type'
+        attribute :target, 'Target'
+      end
+      class Relationships < Xmlish::Tag
+        type 'Relationships'
+        namespace Namespace
+        tags :rels, Relationship
+      end
     end
 
     module W
@@ -98,7 +131,7 @@ module Docx
       class Text < Tag
         type 't'
         namespace Namespace
-        attribute :space
+        attribute :space, prefix: 'xml'
         content :text, :text
       end
       class Run < Tag

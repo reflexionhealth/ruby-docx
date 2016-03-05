@@ -2,10 +2,11 @@ require_relative '../xmlish/encoding'
 require_relative 'elements'
 require_relative 'styles'
 require_relative 'units'
+require 'zipruby'
+require 'tmpdir'
 
 module Docx
   module Editor
-    include Elements
     include Units
 
     Namespaces = Hash[
@@ -36,7 +37,7 @@ module Docx
       doc.set_page_numbering(start: 1)
       doc.font_table.fonts.push(Elements::W::Font.new(name: 'Arial'))
       doc.settings.display_background_shapes.val = 1
-      doc.settings.default_tab_stop.val = Units::Inches * 0.5
+      doc.settings.default_tab_stop.val = Inches * 0.5
       doc.styles.default = Styles.default
       doc.styles.styles = [
         Styles.paragraph, Styles.table,
@@ -67,6 +68,64 @@ module Docx
         compat = {val: 14, name: 'compatibilityMode', uri: 'http://schemas.microsoft.com/office/word'}
         @settings = W::Settings.new({compatibility: {setting: compat}})
         @styles = W::Styles.new
+      end
+
+      def save_as(filepath)
+        @filename = filepath
+        self.save
+      end
+
+      def save
+        raise "cannot save a document without a filename; use 'save_as' instead" if @filename.nil?
+
+        # build content types
+        wpmlns = 'application/vnd.openxmlformats-officedocument.wordprocessingml'
+        types = Typ::Types.new({
+          defaults: [
+            Typ::Default.new({content: 'application/xml', ext: 'xml'}),
+            Typ::Default.new({content: 'application/vnd.openxmlformats-package.relationships+xml', ext: 'rels'})
+          ],
+          overrides: [
+            Typ::Override.new({content: "#{wpmlns}.settings+xml", path: '/word/settings.xml'}),
+            Typ::Override.new({content: "#{wpmlns}.styles+xml", path: '/word/styles.xml'}),
+            Typ::Override.new({content: "#{wpmlns}.fontTable+xml", path: '/word/fontTable.xml'}),
+            Typ::Override.new({content: "#{wpmlns}.numbering+xml", path: '/word/numbering.xml'}),
+            Typ::Override.new({content: "#{wpmlns}.document.main+xml", path: '/word/document.xml'})
+          ]
+        })
+
+        # build .rels documents
+        relns = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+        outer = Rel::Relationships.new({rels: [
+          Rel::Relationship.new({id: 'rId1', type: "#{relns}/officeDocument", target: 'word/document.xml'})
+        ]})
+        inner = Rel::Relationships.new({rels: [
+          Rel::Relationship.new({id: 'rId1', type: "#{relns}/settings", target: 'settings.xml'}),
+          Rel::Relationship.new({id: 'rId2', type: "#{relns}/fontTable", target: 'fontTable.xml'}),
+          Rel::Relationship.new({id: 'rId3', type: "#{relns}/numbering", target: 'numbering.xml'}),
+          Rel::Relationship.new({id: 'rId4', type: "#{relns}/styles", target: 'styles.xml'})
+        ]})
+
+        Dir.mktmpdir do |tmpdir|
+          Xmlish.write_file("#{tmpdir}/[Content_Types].xml", types, xmlns: Typ::Namespace, standalone: true)
+          Xmlish.write_file("#{tmpdir}/.rels", outer, xmlns: Rel::Namespace)
+          Xmlish.write_file("#{tmpdir}/document.xml.rels", inner, xmlns: Rel::Namespace, standalone: true)
+          Xmlish.write_file("#{tmpdir}/document.xml", @document, namespaces: Namespaces)
+          Xmlish.write_file("#{tmpdir}/settings.xml", @settings, standalone: true, namespaces: Namespaces)
+          Xmlish.write_file("#{tmpdir}/fontTable.xml", @font_table, standalone: true, namespaces: Namespaces)
+          Xmlish.write_file("#{tmpdir}/numbering.xml", @numbering, standalone: true, namespaces: Namespaces)
+          Xmlish.write_file("#{tmpdir}/styles.xml", @styles, standalone: true, namespaces: Namespaces)
+          Zip::Archive.open(@filename, Zip::CREATE|Zip::TRUNC) do |zip|
+            zip.add_file('word/numbering.xml', "#{tmpdir}/numbering.xml")
+            zip.add_file('word/settings.xml', "#{tmpdir}/settings.xml")
+            zip.add_file('word/fontTable.xml', "#{tmpdir}/fontTable.xml")
+            zip.add_file('word/styles.xml', "#{tmpdir}/styles.xml")
+            zip.add_file('word/document.xml', "#{tmpdir}/document.xml")
+            zip.add_file('word/_rels/document.xml.rels', "#{tmpdir}/document.xml.rels")
+            zip.add_file('_rels/.rels', "#{tmpdir}/.rels")
+            zip.add_file('[Content_Types].xml', "#{tmpdir}/[Content_Types].xml")
+          end
+        end
       end
 
       def define_list_style(style_name, numbering_style)
@@ -121,7 +180,6 @@ module Docx
         @paragraph = W::Paragraph.new
         # TODO: Should we always set underline for a new paragraph?
         @paragraph.properties.run.underline.val = 'none'
-        self.set_font_size(Units::Points * 8)
       end
 
       def set_list_style(style_name, indent: 0)
@@ -133,7 +191,7 @@ module Docx
         end
 
         props = @paragraph.properties
-        props.numbering.indent.val = 0
+        props.numbering.indent.val = indent
         props.numbering.id.val = style[:definition].id
         # TODO: Is this correct source for this data? Check more example files.
         props.indent.left = style[:abstract].levels[indent].paragraph.indent.left

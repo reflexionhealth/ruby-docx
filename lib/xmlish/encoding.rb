@@ -1,9 +1,16 @@
 module Xmlish
   def self.dump(tag, root = false, standalone: false, xmlns: nil, namespaces: {})
-    file = StringIO.new
-    encoder = Encoder.new(file, xmlns: xmlns, namespaces: namespaces)
+    buffer = StringIO.new
+    encoder = Encoder.new(buffer, xmlns: xmlns, namespaces: namespaces)
     encoder.encode(tag, root, standalone: standalone)
-    file.string
+    buffer.string
+  end
+
+  def self.write_file(path, tag, standalone: false, xmlns: nil, namespaces: {})
+    File.open(path, 'w') do |file|
+      encoder = Encoder.new(file, xmlns: xmlns, namespaces: namespaces)
+      encoder.encode(tag, true, standalone: standalone)
+    end
   end
 
   # TODO: Move TypeErrors into the attr_writer?
@@ -37,10 +44,14 @@ module Xmlish
 
       # write opening tag
       @file.write("<#{prefix}#{klass.tag_type}")
-      @namespaces.each { |pre, ns| @file.write(" xmlns:#{pre}=\"#{ns}\"") } if root
-      klass.tag_attributes.each do |symbol, xmlattr|
+      if root
+        @file.write(" xmlns=\"#{@xmlns}\"") unless @xmlns.nil?
+        @namespaces.each { |pre, ns| @file.write(" xmlns:#{pre}=\"#{ns}\"") }
+      end
+      klass.tag_attributes.each do |symbol, info|
         value = tag.send(symbol)
-        @file.write(" #{prefix}#{xmlattr}=\"#{value}\"") unless value.nil?
+        attr_prefix = info[:prefix] ? "#{info[:prefix]}:" : prefix
+        @file.write(" #{attr_prefix}#{info[:name]}=\"#{value}\"") unless value.nil?
       end
 
       empty = klass.tag_sequence.empty?
