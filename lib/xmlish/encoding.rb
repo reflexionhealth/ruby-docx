@@ -7,10 +7,12 @@ module Xmlish
   end
 
   def self.write_file(path, tag, standalone: false, xmlns: nil, namespaces: {})
+    written = 0
     File.open(path, 'w') do |file|
       encoder = Encoder.new(file, xmlns: xmlns, namespaces: namespaces)
-      encoder.encode(tag, true, standalone: standalone)
+      written = encoder.encode(tag, true, standalone: standalone)
     end
+    written
   end
 
   # TODO: Move TypeErrors into the attr_writer?
@@ -24,6 +26,24 @@ module Xmlish
     end
 
     def encode(tag, root = false, standalone: false)
+      @written = 0
+      if root
+        directives = 'version="1.0" encoding="UTF-8"'
+        directives += ' standalone="yes"' if standalone
+        write("<?xml #{directives}?>\r")
+        recurse(tag, true)
+      else
+        recurse(tag, false)
+      end
+      @written
+    end
+
+  private
+    def write(string)
+      @written += @file.write(string)
+    end
+
+    def recurse(tag, xmlns_attrs = false)
       klass = tag.class
       prefix = nil
       namespace = klass.tag_namespace
@@ -35,30 +55,20 @@ module Xmlish
         end
       end
 
-      # write xml directive
-      if root
-        directives = 'version="1.0" encoding="UTF-8"'
-        directives += ' standalone="yes"' if standalone
-        @file.write("<?xml #{directives}?>\r")
-      end
-
       # write opening tag
-      @file.write("<#{prefix}#{klass.tag_type}")
-      if root
-        @file.write(" xmlns=\"#{@xmlns}\"") unless @xmlns.nil?
-        @namespaces.each { |pre, ns| @file.write(" xmlns:#{pre}=\"#{ns}\"") }
+      write("<#{prefix}#{klass.tag_type}")
+      if xmlns_attrs
+        write(" xmlns=\"#{@xmlns}\"") unless @xmlns.nil?
+        @namespaces.each { |pre, ns| write(" xmlns:#{pre}=\"#{ns}\"") }
       end
       klass.tag_attributes.each do |symbol, info|
         value = tag.send(symbol)
         attr_prefix = info[:prefix] ? "#{info[:prefix]}:" : prefix
-        @file.write(" #{attr_prefix}#{info[:name]}=\"#{value}\"") unless value.nil?
+        write(" #{attr_prefix}#{info[:name]}=\"#{value}\"") unless value.nil?
       end
 
-      empty = klass.tag_sequence.empty?
-      empty ? @file.write('/>') : @file.write('>')
-
-      # write inner xml
-      content = ''
+      # collect inner tags/content
+      content = []
       klass.tag_sequence.each do |symbol|
         child = klass.tag_children[symbol]
         case child[:type]
@@ -71,14 +81,14 @@ module Xmlish
               raise TypeError, "expected #{basename}.#{symbol} to be <#{child[:class].tag_type}>::Tag " \
                                "but got #{value.class.name}"
             end
-            self.encode(value)
+            content.push(value)
           end
 
         when :choice
           value = tag.get_tags(symbol)
           if child[:max] == 1
             if !value.nil?
-              self.encode(value)
+              content.push(value)
             elsif child[:min] > 0
               raise EncodeError, "too few tags provided for '#{symbol}' in #{tag.inspect}:#{klass.name} (0 of 1)"
             end
@@ -91,7 +101,7 @@ module Xmlish
             elsif max > 0 and num > max
               raise EncodeError, "too many tags provided for '#{symbol}' in #{tag.inspect}:#{klass.name} (#{num} for #{min}..#{max})"
             end
-            value.each { |item| self.encode(item) }
+            value.each { |item| content.push(item) }
           end
 
         when :content
@@ -103,18 +113,21 @@ module Xmlish
               basename = klass.name.split('::').last
               raise TypeError, "expected #{basename}.#{symbol} to be String but got #{value.class.name}"
             end
-            @file.write(value)
-          when :tags
-            value.each { |item| self.encode(item) }
-          when :mixed
-            value.each { |item| item.is_a?(Tag) ? self.encode(item) : @file.write(item.to_s) }
+            content.push(value)
+          when :tags, :mixed
+            value.each { |item| content.push(item) }
           end
         end
       end
 
-      # write closing tag
-      unless empty
-        @file.write("</#{prefix}#{klass.tag_type}>")
+      if content.empty?
+        write('/>')
+      else
+        write('>')
+        # write inner xml
+        content.each { |item| item.is_a?(Tag) ? recurse(item) : write(item.to_s) }
+        # write closing tag
+        write("</#{prefix}#{klass.tag_type}>")
       end
     end
   end
