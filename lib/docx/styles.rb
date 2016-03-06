@@ -1,3 +1,7 @@
+require_relative 'bool'
+require_relative 'units'
+require_relative 'elements'
+
 module Docx
   module Styles
     include Elements
@@ -7,10 +11,10 @@ module Docx
       W::DefaultProperties.new({
         run: {properties: {
           fonts: {ascii: 'Arial', complex: 'Arial', east_asia: 'Arial', ansi: 'Arial'},
-          bold: {val: 0},
-          italic: {val: 0},
-          small_caps: {val: 0},
-          strike: {val: 0},
+          bold: {val: Docx::False},
+          italic: {val: Docx::False},
+          small_caps: {val: Docx::False},
+          strike: {val: Docx::False},
           color: {val: '000000'},
           font_size: {val: Points * 11},
           font_size_complex: {val: Points * 11},
@@ -18,10 +22,10 @@ module Docx
           vertical_align: {val: 'baseline'}
         }},
         paragraph: {properties: {
-          keep_next: {val: 0},
-          keep_lines: {val: 0},
-          widow_control: {val: 1},
-          spacing: {after: 0, before: 0, line: Bases * 276, line_rule: 'auto'},
+          keep_next: {val: Docx::False},
+          keep_lines: {val: Docx::False},
+          widow_control: {val: Docx::True},
+          spacing: {after: 0, before: 0, line: Halfpts * 276, line_rule: 'auto'},
           indent: {left: 0, right: 0, first_line: 0},
           justify: {val: 'left'}
         }}
@@ -54,10 +58,10 @@ module Docx
         based_on: {val: 'Normal'},
         next: {val: 'Normal'},
         paragraph: {
-          keep_next: {val: 1},
-          keep_lines: {val: 1},
-          spacing: {after: Bases * 120, before: Bases * 400, line_rule: 'auto'},
-          contextual_spacing: {val: 1}
+          keep_next: {val: Docx::True},
+          keep_lines: {val: Docx::True},
+          spacing: {after: Halfpts * 120, before: Halfpts * 400, line_rule: 'auto'},
+          contextual_spacing: {val: Docx::True}
         },
         run: {
           font_size: {val: Points * 20},
@@ -74,13 +78,13 @@ module Docx
         based_on: {val: 'Normal'},
         next: {val: 'Normal'},
         paragraph: {
-          keep_next: {val: 1},
-          keep_lines: {val: 1},
-          spacing: {after: Bases * 120, before: Bases * 360, line_rule: 'auto'},
-          contextual_spacing: {val: 1}
+          keep_next: {val: Docx::True},
+          keep_lines: {val: Docx::True},
+          spacing: {after: Halfpts * 120, before: Halfpts * 360, line_rule: 'auto'},
+          contextual_spacing: {val: Docx::True}
         },
         run: {
-          bold: {val: 0},
+          bold: {val: Docx::False},
           font_size: {val: Points * 16},
           font_size_complex: {val: Points * 16}
         }
@@ -95,13 +99,13 @@ module Docx
         based_on: {val: 'Normal'},
         next: {val: 'Normal'},
         paragraph: {
-          keep_next: {val: 1},
-          keep_lines: {val: 1},
-          spacing: {after: Bases * 80, before: Bases * 320, line_rule: 'auto'},
-          contextual_spacing: {val: 1}
+          keep_next: {val: Docx::True},
+          keep_lines: {val: Docx::True},
+          spacing: {after: Halfpts * 80, before: Halfpts * 320, line_rule: 'auto'},
+          contextual_spacing: {val: Docx::True}
         },
         run: {
-          bold: {val: 0},
+          bold: {val: Docx::False},
           color: {val: '434343'},
           font_size: {val: Points * 14},
           font_size_complex: {val: Points * 14}
@@ -117,10 +121,10 @@ module Docx
         based_on: {val: 'Normal'},
         next: {val: 'Normal'},
         paragraph: {
-          keep_next: {val: 1},
-          keep_lines: {val: 1},
-          spacing: {after: Bases * 80, before: Bases * 280, line_rule: 'auto'},
-          contextual_spacing: {val: 1}
+          keep_next: {val: Docx::True},
+          keep_lines: {val: Docx::True},
+          spacing: {after: Halfpts * 80, before: Halfpts * 280, line_rule: 'auto'},
+          contextual_spacing: {val: Docx::True}
         },
         run: {
           color: {val: '666666'},
@@ -138,10 +142,10 @@ module Docx
         based_on: {val: 'Normal'},
         next: {val: 'Normal'},
         paragraph: {
-          keep_next: {val: 1},
-          keep_lines: {val: 1},
-          spacing: {after: Bases * 80, before: Bases * 240, line_rule: 'auto'},
-          contextual_spacing: {val: 1}
+          keep_next: {val: Docx::True},
+          keep_lines: {val: Docx::True},
+          spacing: {after: Halfpts * 80, before: Halfpts * 240, line_rule: 'auto'},
+          contextual_spacing: {val: Docx::True}
         },
         run: {
           color: {val: '666666'},
@@ -159,13 +163,13 @@ module Docx
         based_on: {val: 'Normal'},
         next: {val: 'Normal'},
         paragraph: {
-          keep_next: {val: 1},
-          keep_lines: {val: 1},
-          spacing: {after: Bases * 80, before: Bases * 240, line_rule: 'auto'},
-          contextual_spacing: {val: 1}
+          keep_next: {val: Docx::True},
+          keep_lines: {val: Docx::True},
+          spacing: {after: Halfpts * 80, before: Halfpts * 240, line_rule: 'auto'},
+          contextual_spacing: {val: Docx::True}
         },
         run: {
-          italic: {val: 1},
+          italic: {val: Docx::True},
           color: {val: '666666'},
           font_size: {val: Points * 11},
           font_size_complex: {val: Points * 11}
@@ -181,10 +185,10 @@ module Docx
         based_on: {val: 'Normal'},
         next: {val: 'Normal'},
         paragraph: {
-          keep_next: {val: 1},
-          keep_lines: {val: 1},
-          spacing: {after: Bases * 60, before: 0, line_rule: 'auto'},
-          contextual_spacing: {val: 1}
+          keep_next: {val: Docx::True},
+          keep_lines: {val: Docx::True},
+          spacing: {after: Halfpts * 60, before: 0, line_rule: 'auto'},
+          contextual_spacing: {val: Docx::True}
         },
         run: {
           font_size: {val: Points * 26},
@@ -201,14 +205,14 @@ module Docx
         based_on: {val: 'Normal'},
         next: {val: 'Normal'},
         paragraph: {
-          keep_next: {val: 1},
-          keep_lines: {val: 1},
-          spacing: {after: Bases * 320, before: 0, line_rule: 'auto'},
-          contextual_spacing: {val: 1}
+          keep_next: {val: Docx::True},
+          keep_lines: {val: Docx::True},
+          spacing: {after: Halfpts * 320, before: 0, line_rule: 'auto'},
+          contextual_spacing: {val: Docx::True}
         },
         run: {
           fonts: {ascii: 'Arial', complex: 'Arial', east_asia: 'Arial', ansi: 'Arial'},
-          italic: {val: 0},
+          italic: {val: Docx::False},
           color: {val: '666666'},
           font_size: {val: Points * 15},
           font_size_complex: {val: Points * 15}

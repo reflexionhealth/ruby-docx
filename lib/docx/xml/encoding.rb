@@ -86,8 +86,7 @@ module Docx
             value = child[:class].new if value.nil? and child[:required]
             unless value.nil?
               unless value.is_a? child[:class]
-                basename = klass.name.split('::').last || klass.tag_type
-                raise TypeError, "expected #{basename}.#{symbol} to be <#{child[:class].tag_type}>::Tag " \
+                raise TypeError, "expected #{klass.basename}.#{symbol} to be #{child[:class].basename} " \
                                  "but got #{value.class.name}"
               end
               content.push(value)
@@ -99,19 +98,16 @@ module Docx
               if !value.nil?
                 content.push(value)
               elsif child[:min] > 0
-                basename = klass.name.split('::').last || klass.tag_type
-                raise EncodeError, "too few tags for #{basename}.#{symbol} (0 of 1)"
+                raise EncodeError, "too few tags for #{klass.basename}.#{symbol} (0 of 1)"
               end
             else
               value ||= []
               num, min, max = value.count, child[:min], child[:max]
               if num < min
                 range = max > 0 ? "#{min}..#{max}" : "#{min}+"
-                basename = klass.name.split('::').last || klass.tag_type
-                raise EncodeError, "too few tags for #{basename}.#{symbol} (#{num} for #{range})"
+                raise EncodeError, "too few tags for #{klass.basename}.#{symbol} (#{num} for #{range})"
               elsif max > 0 and num > max
-                basename = klass.name.split('::').last || klass.tag_type
-                raise EncodeError, "too many tags for #{basename}.#{symbol} (#{num} for #{min}..#{max})"
+                raise EncodeError, "too many tags for #{klass.basename}.#{symbol} (#{num} for #{min}..#{max})"
               end
               value.each { |item| content.push(item) }
             end

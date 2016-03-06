@@ -124,6 +124,10 @@ module Docx
         end
       end
 
+      def self.basename
+        self.name ? self.name.split('::').last : "<#{self.tag_type}>::Tag"
+      end
+
       def self.inherited(subclass)
         subclass.singleton_class.instance_eval do
           attr_accessor :tag_type
@@ -158,14 +162,14 @@ module Docx
               self.send("#{name}=", value)
             end
           else
-            raise NameError, "unknown attribute or tag '#{name}' for #{self.class.name}"
+            raise NameError, "unknown attribute or tag '#{name}' for #{self.class.basename}"
           end
         end
       end
 
       def get_tag(sym)
         child = self.class.tag_children[sym]
-        raise NameError, "undefined tag '#{sym}' for #{self.class.name}" if child.nil?
+        raise NameError, "undefined tag '#{sym}' for #{self.class.basename}" if child.nil?
         self.instance_variable_get(child[:variable])
       end
       alias get_tags get_tag
@@ -173,7 +177,7 @@ module Docx
 
       def set_tag(sym, _value)
         child = self.class.tag_children[sym]
-        raise NameError, "undefined tag '#{sym}' for #{self.class.name}" if child.nil?
+        raise NameError, "undefined tag '#{sym}' for #{self.class.basename}" if child.nil?
         self.instance_variable_set(child[:variable])
       end
       alias set_tags set_tag

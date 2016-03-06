@@ -19,8 +19,8 @@ module Docx
       class Types < Xml::Tag
         type 'Types'
         namespace Namespace
-        tags :defaults, Default
-        tags :overrides, Override
+        tags :defaults, [Default]
+        tags :overrides, [Override]
       end
     end
 
@@ -36,7 +36,7 @@ module Docx
       class Relationships < Xml::Tag
         type 'Relationships'
         namespace Namespace
-        tags :rels, Relationship
+        tags :rels, [Relationship]
       end
     end
 
@@ -96,6 +96,45 @@ module Docx
         tag :contextual_spacing, W.define('contextualSpacing', [:val])
         tag :justify, W.define('jc', [:val])
         tag :run, RunProperties
+      end
+      class TableCellMargins < Tag
+        type 'tcMar'
+        namespace Namespace
+        tag :top, W.define('top', [:w, :type])
+        tag :left, W.define('left', [:w, :type])
+        tag :bottom, W.define('bottom', [:w, :type])
+        tag :right, W.define('right', [:w, :type])
+      end
+      class TableCellProperties < Tag
+        type 'tcPr'
+        namespace Namespace
+        tag :margins, TableCellMargins
+      end
+      class TableRowProperties < Tag
+        type 'trPr'
+        namespace Namespace
+      end
+      class TableBorders < Tag
+        type 'tblBorders'
+        namespace Namespace
+        tag :top, W.define('top', [:color, :space, :sz, :val]) # size in eighths of a point
+        tag :left, W.define('left', [:color, :space, :sz, :val])
+        tag :bottom, W.define('bottom', [:color, :space, :sz, :val])
+        tag :right, W.define('right', [:color, :space, :sz, :val])
+        tag :horizontal, W.define('insideH', [:color, :space, :sz, :val])
+        tag :vertical, W.define('insideV', [:color, :space, :sz, :val])
+      end
+      class TableProperties < Tag
+        type 'tblPr'
+        namespace Namespace
+        tag :style, W.define('tblStyle', [:val])
+        tag :right_to_left, W.define('bidi', [:val])
+        tag :width, W.define('tblW', [:w, :type])
+        tag :justify, W.define('jc', [:val])
+        tag :indent, W.define('tblInd', [:w, :type])
+        tag :borders, TableBorders
+        tag :layout, W.define('tblLayout', [:type])
+        tag :look, W.define('tblLook', [:val])
       end
       class PageSize < Tag
         type 'pgSz'
@@ -170,9 +209,43 @@ module Docx
           super(*args)
         end
       end
+      class GridColumn < Tag
+        type 'gridCol'
+        namespace Namespace
+        attribute :width, 'w'
+      end
+      class TableGrid < Tag; end # NOTE: TableGrid defined below
+      class TableGridChange < Tag
+        type 'tblGridChange'
+        namespace Namespace
+        attribute :id
+        tag :previous, TableGrid, required: true
+      end
+      class TableGrid < Tag
+        type 'tblGrid'
+        namespace Namespace
+        tags :columns, [GridColumn]
+        tag :change, TableGridChange
+      end
+      class Table < Tag; end # NOTE: Table defined below
+      class TableCell < Tag
+        type 'tc'
+        namespace Namespace
+        tag :properties, TableCellProperties
+        tags :content, [Paragraph, Table]
+      end
+      class TableRow < Tag
+        type 'tr'
+        namespace Namespace
+        tag :properties, TableRowProperties
+        tags :content, [TableCell]
+      end
       class Table < Tag
         type 'tbl'
         namespace Namespace
+        tag :properties, TableProperties, required: true
+        tag :grid, TableGrid, required: true
+        tags :content, [TableRow]
       end
       class Body < Tag
         namespace Namespace
@@ -193,7 +266,7 @@ module Docx
       class FontTable < Tag
         type 'fonts'
         namespace W::Namespace
-        tags :fonts, Font
+        tags :fonts, [Font]
       end
 
       # Numbering (Lists)
@@ -212,7 +285,7 @@ module Docx
         type 'abstractNum'
         namespace W::Namespace
         attribute :id, 'abstractNumId'
-        tags :levels, LevelDefinition, max: 9
+        tags :levels, [LevelDefinition], max: 9
       end
       class NumberDefinition < Tag
         type 'num'
@@ -222,8 +295,8 @@ module Docx
       end
       class Numbering < Tag
         namespace W::Namespace
-        tags :abstract_definitions, AbstractNumberDefinition
-        tags :definitions, NumberDefinition
+        tags :abstract_definitions, [AbstractNumberDefinition]
+        tags :definitions, [NumberDefinition]
       end
 
       # Settings
@@ -270,11 +343,14 @@ module Docx
         tag :next, W.define('next', [:val])
         tag :paragraph, ParagraphProperties
         tag :run, RunProperties
+        tag :table, TableProperties
+        tag :row, TableRowProperties
+        tag :cell, TableCellProperties
       end
       class Styles < Tag
         namespace W::Namespace
         tag :default, DefaultProperties
-        tags :styles, Style
+        tags :styles, [Style]
       end
     end
   end

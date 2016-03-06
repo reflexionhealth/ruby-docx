@@ -1,3 +1,5 @@
+require_relative 'bool'
+require_relative 'units'
 require_relative 'elements'
 
 module Docx
@@ -11,7 +13,7 @@ module Docx
         levels: ((0...9).map do |level|
           W::LevelDefinition.new({
             level: level,
-            start: {val: 1},
+            start: {val: Docx::True},
             format: {val: 'decimal'},
             text: {val: (1..level + 1).map { |x| "%#{x}." }.join},
             justify: {val: 'right'},

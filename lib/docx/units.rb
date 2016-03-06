@@ -24,7 +24,7 @@ module Docx
       if Size === other
         Size.new(value + other.value, @parts + other.parts)
       else
-        Size.new(value + other, @parts + [[:bases, other]])
+        Size.new(value + other, @parts + [[:halfpts, other]])
       end
     end
 
@@ -73,6 +73,7 @@ module Docx
     end
 
     def to_i; @value.to_i; end
+    def to_f; @value.to_f; end
     def to_s; @value.to_s; end
     def hash; @value.hash; end
     def is_a?(klass); Size == klass || @value.is_a?(klass); end
@@ -81,7 +82,7 @@ module Docx
     def inspect
       singular = {inches: 'inch'}
       amount_per_unit = @parts.each_with_object(Hash.new(0)) { |(unit, amount), hash| hash[unit] += amount }
-      texts = amount_per_unit.sort_by { |unit, _| [:inches, :bases].index(unit) }
+      texts = amount_per_unit.sort_by { |unit, _| [:inches, :points, :halfpts].index(unit) }
                              .map { |unit, amount| "#{amount} #{amount == 1 ? singular[unit] || unit[0...-1] : unit}" }
       texts[0...-1].each_with_index { |text, i| texts[i] = text + ',' } if texts.count > 2
       texts[-1] = 'and ' + texts[-1] if texts.count > 1
@@ -90,20 +91,16 @@ module Docx
   end
 
   module Units
-    Base = 1
-    Bases = Size.new(Base, [[:bases, 1]])
+    Halfpt = 1
+    Halfpts = Size.new(Halfpt, [[:halfpts, 1]])
     Point = 2
     Points = Size.new(Point, [[:points, 1]])
-    Tab = 16 * 4
-    Tabs = Size.new(Tab, [[:tabs, 1]])
     Inch = 1440
     Inches = Size.new(Inch, [[:inches, 1]])
   end
 
-  module NumericExt
+  module NumericExt0
     def pt; Docx::Size.new(self * Units::Point, [[:points, self]]); end
-    def tab; self.tabs; end
-    def tabs; Docx::Size.new(self * Units::Tab, [[:tabs, self]]); end
     def inch; self.inches; end
     def inches; Docx::Size.new(self * Units::Inch, [[:inches, self]]); end
   end

@@ -1,7 +1,8 @@
-require_relative 'xml/encoding'
-require_relative 'elements'
-require_relative 'styles'
+require_relative 'bool'
 require_relative 'units'
+require_relative 'elements'
+require_relative 'numbering'
+require_relative 'styles'
 require 'zipruby'
 require 'tmpdir'
 
@@ -36,7 +37,7 @@ module Docx
       doc.set_page_margins(top: Inches * 1, bottom: Inches * 1, left: Inches * 1, right: Inches * 1)
       doc.set_page_numbering(start: 1)
       doc.font_table.fonts.push(Elements::W::Font.new(name: 'Arial'))
-      doc.settings.display_background_shapes.val = 1
+      doc.settings.display_background_shapes.val = Docx::True
       doc.settings.default_tab_stop.val = Inches * 0.5
       doc.styles.default = Styles.default
       doc.styles.styles = [
@@ -164,8 +165,14 @@ module Docx
 
       def add_paragraph
         paragraph = Paragraph.new(self)
-        @document.body.content.push(paragraph.paragraph)
+        @document.body.content.push(paragraph.root)
         paragraph
+      end
+
+      def add_table
+        table = Table.new(self)
+        @document.body.content.push(table.root)
+        table
       end
     end
 
@@ -173,13 +180,13 @@ module Docx
       include Elements
 
       attr_accessor :document
-      attr_accessor :paragraph
+      attr_accessor :root
 
       def initialize(editor_doc)
         @document = editor_doc
-        @paragraph = W::Paragraph.new({
-          properties: {contextual_spacing: {val: 0}},
-          content: [W::Run.new(properties: {right_to_left: {val: 0}})]
+        @root = W::Paragraph.new({
+          properties: {contextual_spacing: {val: Docx::False}},
+          content: [W::Run.new(properties: {right_to_left: {val: Docx::False}})]
         })
       end
 
@@ -191,8 +198,8 @@ module Docx
           raise IndexError, "can't use indent #{indent} with list style '#{style_name}' (max #{max_indent})"
         end
 
-        props = @paragraph.properties
-        props.contextual_spacing.val = 1
+        props = @root.properties
+        props.contextual_spacing.val = Docx::True
         props.numbering.indent.val = indent
         props.numbering.id.val = style[:definition].id
         # TODO: Is this correct source for this data? Check more example files.
@@ -203,25 +210,158 @@ module Docx
       end
 
       def set_font_size(size)
-        run = @paragraph.properties.run
+        run = @root.properties.run
         run.font_size.val = size
         run.font_size_complex.val = size
         run
       end
 
+      def set_indent(left: nil, right: nil, hanging: nil, first_line: nil)
+        indent = @root.properties.indent
+        indent.left = left if left
+        indent.right = right if right
+        indent.hanging = hanging if hanging
+        indent.first_line = first_line if first_line
+        indent
+      end
+
       def add_text(text)
         run = W::Run.new({
           content: [W::Text.new({space: 'preserve', text: text})],
-          properties: {right_to_left: {val: 0}}
+          properties: {right_to_left: {val: Docx::False}}
         })
-        default = @paragraph.properties.run
+        default = @root.properties.run
         run.properties.font_size = default.get_tag(:font_size) # preserves nil
         run.properties.font_size_complex = default.get_tag(:font_size_complex)
 
-        prev = @paragraph.content.last
-        @paragraph.content.pop if prev.is_a? W::Run and prev.content.empty?
-        @paragraph.content.push(run)
+        prev = @root.content.last
+        @root.content.pop if prev.is_a? W::Run and prev.content.empty?
+        @root.content.push(run)
         run
+      end
+    end
+
+    class Table
+      include Elements
+
+      attr_accessor :document
+      attr_accessor :root
+
+      def initialize(editor_doc)
+        @document = editor_doc
+        @root = W::Table.new({
+          properties: {
+            right_to_left: {val: Docx::False},
+            justify: {val: 'left'},
+            borders: {
+              top: {color: '000000', space: 0, sz: 8, val: 'single'},
+              left: {color: '000000', space: 0, sz: 8, val: 'single'},
+              bottom: {color: '000000', space: 0, sz: 8, val: 'single'},
+              right: {color: '000000', space: 0, sz: 8, val: 'single'},
+              horizontal: {color: '000000', space: 0, sz: 8, val: 'single'},
+              vertical: {color: '000000', space: 0, sz: 8, val: 'single'}
+            },
+            layout: {type: 'fixed'},
+            look: {val: '0600'}
+          }
+        })
+      end
+
+      def set_width(size)
+        # NOTE(Kevin): Supposedly "dxa" is 20ths of a point, but Google Docs
+        # treats it as a half point, so we'll just ignore all that
+        props = @root.properties
+        props.width.type = 'dxa'
+        props.width.w = size.to_f
+        props
+      end
+
+      def set_indent(size)
+        # NOTE(Kevin): Supposedly "dxa" is 20ths of a point, but Google Docs
+        # treats it as a half point, so we'll just ignore all that
+        props = @root.properties
+        props.indent.type = 'dxa'
+        props.indent.w = size.to_f
+        props
+      end
+
+      def define_columns(widths)
+        grid = @root.grid
+        grid.columns = widths.map { |w| W::GridColumn.new(width: w) }
+        grid.change.previous.columns = grid.columns
+        grid
+      end
+
+      def add_row
+        row = TableRow.new(self)
+        @root.content.push(row.root)
+        row
+      end
+    end
+
+    class TableRow
+      include Elements
+
+      attr_accessor :table
+      attr_accessor :root
+
+      def initialize(editor_tbl)
+        @table = editor_tbl
+        @root = W::TableRow.new
+      end
+
+      def add_cell
+        cell = TableCell.new(@table)
+        @root.content.push(cell.root)
+        cell
+      end
+    end
+
+    class TableCell
+      include Elements
+
+      attr_accessor :table
+      attr_accessor :root
+
+      def initialize(editor_tbl)
+        @table = editor_tbl
+        @root = W::TableCell.new
+        self.set_margins(top: 100, right: 100, bottom: 100, left: 100) # ~0.69 inches
+      end
+
+      def set_margins(top: nil, right: nil, bottom: nil, left: nil)
+        # NOTE(Kevin): Supposedly "dxa" is 20ths of a point, but Google Docs
+        # treats it as a half point, so we'll just ignore all that
+        margins = @root.properties.margins
+        if top
+          margins.top.type = 'dxa'
+          margins.top.w = top.to_f
+        end
+        if right
+          margins.right.type = 'dxa'
+          margins.right.w = right.to_f
+        end
+        if bottom
+          margins.bottom.type = 'dxa'
+          margins.bottom.w = bottom.to_f
+        end
+        if left
+          margins.left.type = 'dxa'
+          margins.left.w = left.to_f
+        end
+        margins
+      end
+
+      def add_paragraph
+        paragraph = Paragraph.new(self)
+        @root.content.push(paragraph.root)
+        paragraph
+      end
+
+      def add_table
+        table = Table.new(self)
+        @root.content.push(table.root)
+        table
       end
     end
   end
