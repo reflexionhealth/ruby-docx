@@ -84,6 +84,16 @@ module Docx
         tag :indent, W.define('ilvl', [:val])
         tag :id, W.define('numId', [:val])
       end
+      class ParagraphBorders < Tag
+        type 'pBdr'
+        namespace Namespace
+        tag :top, W.define('top', [:color, :space, :sz, :val])
+        tag :left, W.define('left', [:color, :space, :sz, :val])
+        tag :bottom, W.define('bottom', [:color, :space, :sz, :val])
+        tag :right, W.define('right', [:color, :space, :sz, :val])
+        tag :between, W.define('between', [:color, :space, :sz, :val])
+        tag :bar, W.define('bar', [:color, :space, :sz, :val])
+      end
       class ParagraphProperties < Tag
         type 'pPr'
         namespace Namespace
@@ -167,12 +177,18 @@ module Docx
       end
 
       # Document
+      class Break < Tag
+        type 'br'
+        namespace Namespace
+        attributes :type, :clear
+      end
       class Text < Tag
         type 't'
         namespace Namespace
         attribute :space, prefix: 'xml'
         content :text, :text
       end
+      class Tab < Tag; namespace Namespace; end
       class Run < Tag
         type 'r'
         namespace Namespace
@@ -180,7 +196,7 @@ module Docx
         attribute :rev_id_run, 'rsidR'
         attribute :rev_id_properties, 'rsidRPr'
         tag :properties, RunProperties
-        tags :content, [Text]
+        tags :content, [Break, Tab, Text]
 
         def initialize(*args)
           self.rev_id_deletion = '00000000'

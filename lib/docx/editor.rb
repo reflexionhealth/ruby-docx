@@ -169,6 +169,18 @@ module Docx
         paragraph
       end
 
+      def add_page_break
+        pg = W::Paragraph.new(content: [W::Run.new(content: [W::Break.new(type: 'page')])])
+        @document.body.content.push(pg)
+        pg
+      end
+
+      def add_horizontal_rule
+        pg = W::Paragraph.new(properties: {border: {top: {color: 'auto', space: 1, sz: 4, val: 'single'}}})
+        @document.body.content.push(pg)
+        pg
+      end
+
       def add_table
         table = Table.new(self)
         @document.body.content.push(table.root)
