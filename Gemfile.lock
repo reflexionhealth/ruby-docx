@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ruby-docx (0.0.0)
+    ruby-docx (0.0.1)
       zipruby (~> 0.3.6)
 
 GEM
