@@ -15,7 +15,7 @@ module Docx
           italic: {val: Docx::False},
           small_caps: {val: Docx::False},
           strike: {val: Docx::False},
-          color: {val: '000000'},
+          color: {val: Color::Black},
           font_size: {val: Points * 11},
           font_size_complex: {val: Points * 11},
           underline: {val: 'none'},
@@ -177,7 +177,7 @@ module Docx
       })
     end
 
-    def self.type
+    def self.title
       W::Style.new({
         type: 'paragraph',
         id: 'Title',

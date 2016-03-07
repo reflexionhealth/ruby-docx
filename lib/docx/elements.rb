@@ -97,6 +97,7 @@ module Docx
       class ParagraphProperties < Tag
         type 'pPr'
         namespace Namespace
+        tag :style, W.define('pStyle', [:val])
         tag :keep_next, W.define('keepNext', [:val])
         tag :keep_lines, W.define('keepLines', [:val])
         tag :widow_control, W.define('widowControl', [:val])
@@ -204,6 +205,14 @@ module Docx
           self.rev_id_properties = '00000000'
           super(*args)
         end
+      end
+      class BookmarkStart < Tag
+        attributes :col_first, :col_last
+        attribute :name #, required: true
+        attribute :id #, required: true
+      end
+      class BookmarkEnd < Tag
+        attribute :id
       end
       class Paragraph < Tag
         type 'p'

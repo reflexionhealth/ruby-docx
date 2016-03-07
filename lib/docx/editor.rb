@@ -32,7 +32,7 @@ module Docx
 
     def self.new_document
       doc = Document.new
-      doc.document.background.color = 'FFFFFF'
+      doc.document.background.color = Color::White
       doc.set_page_size(width: Inches * 8.5, height: Inches * 11)
       doc.set_page_margins(top: Inches * 1, bottom: Inches * 1, left: Inches * 1, right: Inches * 1)
       doc.set_page_numbering(start: 1)
@@ -40,12 +40,16 @@ module Docx
       doc.settings.display_background_shapes.val = Docx::True
       doc.settings.default_tab_stop.val = Inches * 0.5
       doc.styles.default = Styles.default
-      doc.styles.styles = [
-        Styles.paragraph, Styles.table,
-        Styles.h1, Styles.h2, Styles.h3,
-        Styles.h4, Styles.h5, Styles.h6,
-        Styles.type, Styles.subtitle
-      ]
+      doc.define_font_style(:default, Styles.paragraph)
+      doc.define_table_style(:default, Styles.table)
+      doc.define_font_style(:h1, Styles.h1)
+      doc.define_font_style(:h2, Styles.h2)
+      doc.define_font_style(:h3, Styles.h3)
+      doc.define_font_style(:h4, Styles.h4)
+      doc.define_font_style(:h5, Styles.h5)
+      doc.define_font_style(:h6, Styles.h6)
+      doc.define_font_style(:title, Styles.title)
+      doc.define_font_style(:subtitle, Styles.subtitle)
       doc
     end
 
@@ -56,19 +60,27 @@ module Docx
       attr_accessor :document
       attr_accessor :font_table
       attr_accessor :numbering
-      attr_accessor :numbering_styles
       attr_accessor :settings
       attr_accessor :styles
+
+      attr_reader :bookmarks
+      attr_reader :font_styles
+      attr_reader :table_styles
+      attr_reader :numbering_styles
 
       def initialize
         @document = W::Document.new
         @font_table = W::FontTable.new
         @numbering = W::Numbering.new
-        @numbering_styles = {}
 
         compat = {val: 14, name: 'compatibilityMode', uri: 'http://schemas.microsoft.com/office/word'}
-        @settings = W::Settings.new({compatibility: {setting: compat}})
+        @settings = W::Settings.new(compatibility: {setting: compat})
         @styles = W::Styles.new
+
+        @bookmarks = []
+        @font_styles = {}
+        @list_styles = {}
+        @table_style = {}
       end
 
       def save_as(filepath)
@@ -129,6 +141,16 @@ module Docx
         end
       end
 
+      def define_font_style(style_name, font_style)
+        doc.styles.styles.push(font_style)
+        @font_styles[style_name] = font_style
+      end
+
+      def define_table_style(style_name, table_style)
+        doc.styles.styles.push(table_style)
+        @table_styles[style_name] = table_style
+      end
+
       def define_list_style(style_name, numbering_style)
         style = numbering_style
         style.id = @numbering.abstract_definitions.length + 1
@@ -137,7 +159,6 @@ module Docx
         defn = W::NumberDefinition.new({abstract_id: {val: style.id}})
         defn.id = @numbering.definitions.length + 1
         @numbering.definitions.push(defn)
-
         @numbering_styles[style_name] = {abstract: style, definition: defn}
       end
 
@@ -237,18 +258,45 @@ module Docx
         indent
       end
 
+      def add_bookmark(name)
+        id = @document.bookmarks.count
+        markstart = W::BookmarkStart.new(col_first: 0, col_last: 0, name: 0, id: id)
+        markend = W::BookmarkEnd.new(id: id)
+        @root.content.push(markstart)
+        @root.content.push(markend)
+        @document.bookmarks.push(markstart)
+        markstart
+      end
+
       def add_text(text)
-        run = W::Run.new({
-          content: [W::Text.new({space: 'preserve', text: text})],
-          properties: {right_to_left: {val: Docx::False}}
-        })
+        run = self.begin_run
+        self.write_text(text)
+        run
+      end
+
+      def begin_run
         default = @root.properties.run
+        run = W::Run.new({properties: {right_to_left: {val: Docx::False}}})
         run.properties.font_size = default.get_tag(:font_size) # preserves nil
         run.properties.font_size_complex = default.get_tag(:font_size_complex)
 
         prev = @root.content.last
-        @root.content.pop if prev.is_a? W::Run and prev.content.empty?
+        @root.content.pop if prev.is_a?(W::Run) and prev.content.empty?
         @root.content.push(run)
+        run
+      end
+
+      def write_text(text)
+        run = @root.content.last
+        raise "call 'begin_run' prior to 'write_text'" unless run.is_a?(W::Run)
+        run.content.push(W::Text.new(space: 'preserve', text: text))
+        run
+      end
+
+      def write_tab
+        run = @root.content.last
+        raise "call 'begin_run' prior to 'write_tab'" unless run.is_a?(W::Run)
+        run.content.push(W::Tab.new)
         run
       end
     end
@@ -266,12 +314,12 @@ module Docx
             right_to_left: {val: Docx::False},
             justify: {val: 'left'},
             borders: {
-              top: {color: '000000', space: 0, sz: 8, val: 'single'},
-              left: {color: '000000', space: 0, sz: 8, val: 'single'},
-              bottom: {color: '000000', space: 0, sz: 8, val: 'single'},
-              right: {color: '000000', space: 0, sz: 8, val: 'single'},
-              horizontal: {color: '000000', space: 0, sz: 8, val: 'single'},
-              vertical: {color: '000000', space: 0, sz: 8, val: 'single'}
+              top: {color: Color::Black, space: 0, sz: 8, val: 'single'},
+              left: {color: Color::Black, space: 0, sz: 8, val: 'single'},
+              bottom: {color: Color::Black, space: 0, sz: 8, val: 'single'},
+              right: {color: Color::Black, space: 0, sz: 8, val: 'single'},
+              horizontal: {color: Color::Black, space: 0, sz: 8, val: 'single'},
+              vertical: {color: Color::Black, space: 0, sz: 8, val: 'single'}
             },
             layout: {type: 'fixed'},
             look: {val: '0600'}
