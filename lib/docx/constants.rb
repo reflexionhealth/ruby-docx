@@ -1,4 +1,4 @@
-require_relative 'units'
+require_relative 'size'
 
 module Docx
   # Bools

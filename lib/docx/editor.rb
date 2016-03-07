@@ -1,4 +1,4 @@
-require_relative 'units'
+require_relative 'size'
 require_relative 'constants'
 require_relative 'elements'
 require_relative 'numbering'
@@ -165,7 +165,7 @@ module Docx
         defn = W::NumberDefinition.new({abstract_id: {val: style.id}})
         defn.id = @numbering.definitions.length + 1
         @numbering.definitions.push(defn)
-        @numbering_styles[style_name] = {abstract: style, definition: defn}
+        @list_styles[style_name] = {abstract: style, definition: defn}
       end
 
       def set_page_size(width: nil, height: nil)
@@ -203,7 +203,7 @@ module Docx
       end
 
       def add_horizontal_rule
-        pg = W::Paragraph.new(properties: {border: {top: {color: 'auto', space: 1, sz: 4, val: 'single'}}})
+        pg = W::Paragraph.new(properties: {borders: {top: {color: 'auto', space: 1, sz: 4, val: 'single'}}})
         @document.body.content.push(pg)
         pg
       end
@@ -232,7 +232,7 @@ module Docx
       def set_style(style_name)
         style = @document.paragraph_styles[style_name]
         raise KeyError, "unknown paragraph style '#{style_name}'" if style.nil?
-        @root.properties.style = style.id
+        @root.properties.style.val = style.id
         @root.properties
       end
 
@@ -282,7 +282,7 @@ module Docx
       end
 
       def add_text(text)
-        run = self.begin_run
+        run = self.add_run
         self.write_text(text)
         run
       end

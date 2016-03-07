@@ -2,7 +2,7 @@ module Docx
   # Provides complex representation of a Size.
   # It can either be used with extensions to numeric:
   #
-  #     Numeric.send(:include, Docx::NumericExt)
+  #     Numeric.extend(Docx::NumericExt)
   #
   #     8.pt
   #     11.inches
@@ -20,7 +20,7 @@ module Docx
     end
 
     # Adds another Size or a Numeric to this Size.
-    # Numeric values are treated as base units (FIXME: What is the smalles unit type?).
+    # Numeric values are treated as halfpts.
     def +(other)
       if Size === other
         Size.new(value + other.value, @parts + other.parts)
@@ -34,7 +34,7 @@ module Docx
     end
 
     # Subtracts another Size or a Numeric from this Size.
-    # Numeric values are treated as base units (FIXME: What is the smalles unit type?).
+    # Numeric values are treated as halfpts.
     def -(other)
       self + (-other)
     end
@@ -92,7 +92,11 @@ module Docx
   end
 
   module NumericExt
-    def pt; Docx::Size.new(self * Docx::Point, [[:points, self]]); end
-    def inches; Docx::Size.new(self * Docx::Inch, [[:inches, self]]); end
+    def self.extended(numeric)
+      numeric.class_eval do
+        def pt; Docx::Size.new(self * Docx::Point, [[:points, self]]); end
+        def inches; Docx::Size.new(self * Docx::Inch, [[:inches, self]]); end
+      end
+    end
   end
 end

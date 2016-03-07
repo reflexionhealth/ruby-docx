@@ -102,6 +102,7 @@ module Docx
         tag :keep_lines, W.define('keepLines', [:val])
         tag :widow_control, W.define('widowControl', [:val])
         tag :numbering, NumberingProperties
+        tag :borders, ParagraphBorders
         tag :spacing, W.define('spacing', [:after, :before, :bottom, :line, :line_rule])
         tag :indent, W.define('ind', [:left, :right, :hanging, :first_line])
         tag :contextual_spacing, W.define('contextualSpacing', [:val])
