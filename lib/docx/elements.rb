@@ -208,8 +208,8 @@ module Docx
       end
       class BookmarkStart < Tag
         attributes :col_first, :col_last
-        attribute :name #, required: true
-        attribute :id #, required: true
+        attribute :name # , required: true
+        attribute :id # , required: true
       end
       class BookmarkEnd < Tag
         attribute :id

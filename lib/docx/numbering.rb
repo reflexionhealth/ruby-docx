@@ -1,11 +1,10 @@
-require_relative 'bool'
 require_relative 'units'
+require_relative 'constants'
 require_relative 'elements'
 
 module Docx
   module Numbering
     include Elements
-    include Units
 
     def self.table_of_contents
       halfinch = Inches * 0.5
