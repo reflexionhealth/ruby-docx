@@ -16,6 +16,10 @@ And then execute:
 
     $ bundle
 
+
+### Usage
+See [Document Editing](https://github.com/reflexionhealth/ruby-docx/wiki/Document-Editing) for usage documentation.
+
 ### Issues
 The GitHub issues for this project are an appropriate place for bug reports,
 feature requests/suggestions, and pull requests.  
