@@ -61,10 +61,10 @@ module Docx
       attr_accessor :settings
       attr_accessor :styles
 
-      attr_reader :bookmarks
       attr_reader :paragraph_styles
       attr_reader :table_styles
       attr_reader :list_styles
+      attr_reader :bookmarks
 
       def initialize
         @document = W::Document.new
@@ -75,16 +75,16 @@ module Docx
         @settings = W::Settings.new(compatibility: {setting: compat})
         @styles = W::Styles.new
 
-        @bookmarks = {}
         @paragraph_styles = {}
         @table_styles = {}
         @list_styles = {}
+        @bookmarks = {}
       end
 
       def inspect
         text = '#<Docx::Editor::Document'
-        text += " @bookmarks=#{@bookmarks.keys.map(&:to_s).inspect}"
         text += " @styles=#{@paragraph_styles.keys.map(&:to_s).inspect}"
+        text += " @bookmarks=#{@bookmarks.keys.map(&:to_s).inspect}"
         text += '>'
         text
       end
@@ -157,8 +157,8 @@ module Docx
         @table_styles[style_name] = table_style
       end
 
-      def define_list_style(style_name, numbering_style)
-        style = numbering_style
+      def define_list_style(style_name, abstract_numbering)
+        style = abstract_numbering
         style.id = @numbering.abstract_definitions.length + 1
         @numbering.abstract_definitions.push(style)
 
@@ -229,8 +229,15 @@ module Docx
         })
       end
 
+      def set_style(style_name)
+        style = @document.paragraph_styles[style_name]
+        raise KeyError, "unknown paragraph style '#{style_name}'" if style.nil?
+        @root.properties.style = style.id
+        @root.properties
+      end
+
       def set_list_style(style_name, indent: 0)
-        style = @document.numbering_styles[style_name]
+        style = @document.list_styles[style_name]
         raise KeyError, "unknown list style '#{style_name}'" if style.nil?
         max_indent = style[:abstract].levels.count - 1
         if indent > max_indent
@@ -280,7 +287,7 @@ module Docx
         run
       end
 
-      def begin_run
+      def add_run
         default = @root.properties.run
         run = W::Run.new({properties: {right_to_left: {val: Docx::False}}})
         run.properties.font_size = default.get_tag(:font_size) # preserves nil
