@@ -1,11 +1,10 @@
-require_relative 'bool'
-require_relative 'units'
+require_relative 'size'
+require_relative 'constants'
 require_relative 'elements'
 
 module Docx
   module Styles
     include Elements
-    include Units
 
     def self.default
       W::DefaultProperties.new({
@@ -15,7 +14,7 @@ module Docx
           italic: {val: Docx::False},
           small_caps: {val: Docx::False},
           strike: {val: Docx::False},
-          color: {val: '000000'},
+          color: {val: Docx::Black},
           font_size: {val: Points * 11},
           font_size_complex: {val: Points * 11},
           underline: {val: 'none'},
@@ -127,7 +126,7 @@ module Docx
           contextual_spacing: {val: Docx::True}
         },
         run: {
-          color: {val: '666666'},
+          color: {val: Docx::Gray},
           font_size: {val: Points * 12},
           font_size_complex: {val: Points * 12}
         }
@@ -148,7 +147,7 @@ module Docx
           contextual_spacing: {val: Docx::True}
         },
         run: {
-          color: {val: '666666'},
+          color: {val: Docx::Gray},
           font_size: {val: Points * 11},
           font_size_complex: {val: Points * 11}
         }
@@ -170,14 +169,14 @@ module Docx
         },
         run: {
           italic: {val: Docx::True},
-          color: {val: '666666'},
+          color: {val: Docx::Gray},
           font_size: {val: Points * 11},
           font_size_complex: {val: Points * 11}
         }
       })
     end
 
-    def self.type
+    def self.title
       W::Style.new({
         type: 'paragraph',
         id: 'Title',
@@ -213,7 +212,7 @@ module Docx
         run: {
           fonts: {ascii: 'Arial', complex: 'Arial', east_asia: 'Arial', ansi: 'Arial'},
           italic: {val: Docx::False},
-          color: {val: '666666'},
+          color: {val: Docx::Gray},
           font_size: {val: Points * 15},
           font_size_complex: {val: Points * 15}
         }

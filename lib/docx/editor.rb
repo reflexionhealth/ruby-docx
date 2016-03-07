@@ -1,5 +1,5 @@
-require_relative 'bool'
-require_relative 'units'
+require_relative 'size'
+require_relative 'constants'
 require_relative 'elements'
 require_relative 'numbering'
 require_relative 'styles'
@@ -8,8 +8,6 @@ require 'tmpdir'
 
 module Docx
   module Editor
-    include Units
-
     Namespaces = Hash[
       'mc' => 'http://schemas.openxmlformats.org/markup-compatibility/2006',
       'o' => 'urn:schemas-microsoft-com:office:office',
@@ -32,7 +30,7 @@ module Docx
 
     def self.new_document
       doc = Document.new
-      doc.document.background.color = 'FFFFFF'
+      doc.document.background.color = Docx::White
       doc.set_page_size(width: Inches * 8.5, height: Inches * 11)
       doc.set_page_margins(top: Inches * 1, bottom: Inches * 1, left: Inches * 1, right: Inches * 1)
       doc.set_page_numbering(start: 1)
@@ -40,12 +38,16 @@ module Docx
       doc.settings.display_background_shapes.val = Docx::True
       doc.settings.default_tab_stop.val = Inches * 0.5
       doc.styles.default = Styles.default
-      doc.styles.styles = [
-        Styles.paragraph, Styles.table,
-        Styles.h1, Styles.h2, Styles.h3,
-        Styles.h4, Styles.h5, Styles.h6,
-        Styles.type, Styles.subtitle
-      ]
+      doc.define_style(:default, Styles.paragraph)
+      doc.define_table_style(:default, Styles.table)
+      doc.define_style(:h1, Styles.h1)
+      doc.define_style(:h2, Styles.h2)
+      doc.define_style(:h3, Styles.h3)
+      doc.define_style(:h4, Styles.h4)
+      doc.define_style(:h5, Styles.h5)
+      doc.define_style(:h6, Styles.h6)
+      doc.define_style(:title, Styles.title)
+      doc.define_style(:subtitle, Styles.subtitle)
       doc
     end
 
@@ -56,19 +58,35 @@ module Docx
       attr_accessor :document
       attr_accessor :font_table
       attr_accessor :numbering
-      attr_accessor :numbering_styles
       attr_accessor :settings
       attr_accessor :styles
+
+      attr_reader :paragraph_styles
+      attr_reader :table_styles
+      attr_reader :list_styles
+      attr_reader :bookmarks
 
       def initialize
         @document = W::Document.new
         @font_table = W::FontTable.new
         @numbering = W::Numbering.new
-        @numbering_styles = {}
 
         compat = {val: 14, name: 'compatibilityMode', uri: 'http://schemas.microsoft.com/office/word'}
-        @settings = W::Settings.new({compatibility: {setting: compat}})
+        @settings = W::Settings.new(compatibility: {setting: compat})
         @styles = W::Styles.new
+
+        @paragraph_styles = {}
+        @table_styles = {}
+        @list_styles = {}
+        @bookmarks = {}
+      end
+
+      def inspect
+        text = '#<Docx::Editor::Document'
+        text += " @styles=#{@paragraph_styles.keys.map(&:to_s).inspect}"
+        text += " @bookmarks=#{@bookmarks.keys.map(&:to_s).inspect}"
+        text += '>'
+        text
       end
 
       def save_as(filepath)
@@ -129,16 +147,25 @@ module Docx
         end
       end
 
-      def define_list_style(style_name, numbering_style)
-        style = numbering_style
+      def define_style(style_name, paragraph_style)
+        @styles.styles.push(paragraph_style)
+        @paragraph_styles[style_name] = paragraph_style
+      end
+
+      def define_table_style(style_name, table_style)
+        @styles.styles.push(table_style)
+        @table_styles[style_name] = table_style
+      end
+
+      def define_list_style(style_name, abstract_numbering)
+        style = abstract_numbering
         style.id = @numbering.abstract_definitions.length + 1
         @numbering.abstract_definitions.push(style)
 
         defn = W::NumberDefinition.new({abstract_id: {val: style.id}})
         defn.id = @numbering.definitions.length + 1
         @numbering.definitions.push(defn)
-
-        @numbering_styles[style_name] = {abstract: style, definition: defn}
+        @list_styles[style_name] = {abstract: style, definition: defn}
       end
 
       def set_page_size(width: nil, height: nil)
@@ -176,7 +203,7 @@ module Docx
       end
 
       def add_horizontal_rule
-        pg = W::Paragraph.new(properties: {border: {top: {color: 'auto', space: 1, sz: 4, val: 'single'}}})
+        pg = W::Paragraph.new(properties: {borders: {top: {color: 'auto', space: 1, sz: 4, val: 'single'}}})
         @document.body.content.push(pg)
         pg
       end
@@ -202,8 +229,15 @@ module Docx
         })
       end
 
+      def set_style(style_name)
+        style = @document.paragraph_styles[style_name]
+        raise KeyError, "unknown paragraph style '#{style_name}'" if style.nil?
+        @root.properties.style.val = style.id
+        @root.properties
+      end
+
       def set_list_style(style_name, indent: 0)
-        style = @document.numbering_styles[style_name]
+        style = @document.list_styles[style_name]
         raise KeyError, "unknown list style '#{style_name}'" if style.nil?
         max_indent = style[:abstract].levels.count - 1
         if indent > max_indent
@@ -216,7 +250,7 @@ module Docx
         props.numbering.id.val = style[:definition].id
         # TODO: Is this correct source for this data? Check more example files.
         props.indent.left = style[:abstract].levels[indent].paragraph.indent.left
-        props.indent.hanging = Units::Inches / 4
+        props.indent.hanging = Docx::Inches / 4
         props.run.underline.val = 'none' if indent > 0
         props
       end
@@ -237,18 +271,45 @@ module Docx
         indent
       end
 
+      def add_bookmark(name)
+        id = @document.bookmarks.count
+        markstart = W::BookmarkStart.new(col_first: 0, col_last: 0, name: 0, id: id)
+        markend = W::BookmarkEnd.new(id: id)
+        @root.content.push(markstart)
+        @root.content.push(markend)
+        @document.bookmarks[name] = markstart
+        markstart
+      end
+
       def add_text(text)
-        run = W::Run.new({
-          content: [W::Text.new({space: 'preserve', text: text})],
-          properties: {right_to_left: {val: Docx::False}}
-        })
+        run = self.add_run
+        self.write_text(text)
+        run
+      end
+
+      def add_run
         default = @root.properties.run
+        run = W::Run.new({properties: {right_to_left: {val: Docx::False}}})
         run.properties.font_size = default.get_tag(:font_size) # preserves nil
         run.properties.font_size_complex = default.get_tag(:font_size_complex)
 
         prev = @root.content.last
-        @root.content.pop if prev.is_a? W::Run and prev.content.empty?
+        @root.content.pop if prev.is_a?(W::Run) and prev.content.empty?
         @root.content.push(run)
+        run
+      end
+
+      def write_text(text)
+        run = @root.content.last
+        raise "call 'begin_run' prior to 'write_text'" unless run.is_a?(W::Run)
+        run.content.push(W::Text.new(space: 'preserve', text: text))
+        run
+      end
+
+      def write_tab
+        run = @root.content.last
+        raise "call 'begin_run' prior to 'write_tab'" unless run.is_a?(W::Run)
+        run.content.push(W::Tab.new)
         run
       end
     end
@@ -266,12 +327,12 @@ module Docx
             right_to_left: {val: Docx::False},
             justify: {val: 'left'},
             borders: {
-              top: {color: '000000', space: 0, sz: 8, val: 'single'},
-              left: {color: '000000', space: 0, sz: 8, val: 'single'},
-              bottom: {color: '000000', space: 0, sz: 8, val: 'single'},
-              right: {color: '000000', space: 0, sz: 8, val: 'single'},
-              horizontal: {color: '000000', space: 0, sz: 8, val: 'single'},
-              vertical: {color: '000000', space: 0, sz: 8, val: 'single'}
+              top: {color: Docx::Black, space: 0, sz: 8, val: 'single'},
+              left: {color: Docx::Black, space: 0, sz: 8, val: 'single'},
+              bottom: {color: Docx::Black, space: 0, sz: 8, val: 'single'},
+              right: {color: Docx::Black, space: 0, sz: 8, val: 'single'},
+              horizontal: {color: Docx::Black, space: 0, sz: 8, val: 'single'},
+              vertical: {color: Docx::Black, space: 0, sz: 8, val: 'single'}
             },
             layout: {type: 'fixed'},
             look: {val: '0600'}

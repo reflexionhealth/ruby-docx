@@ -6,11 +6,11 @@ Gem::Specification.new do |gems|
   gems.version = Docx::VERSION
   gems.author  = 'Kevin Stenerson'
   gems.summary = 'A gem for "just" writing .docx files'
-  gems.description = <<-END
+  gems.description = <<-DESCRIPTION
 Implements creating and writing of docx files.
 The gem is intended to convert data from yaml/markdown/etc into a .docx
 container which is compatible first with Google Drive then with Microsoft Word.
-END
+DESCRIPTION
   gems.files = ['README.md'] + Dir['lib/**/*']
   gems.require_path = 'lib'
 

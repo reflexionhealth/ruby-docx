@@ -97,10 +97,12 @@ module Docx
       class ParagraphProperties < Tag
         type 'pPr'
         namespace Namespace
+        tag :style, W.define('pStyle', [:val])
         tag :keep_next, W.define('keepNext', [:val])
         tag :keep_lines, W.define('keepLines', [:val])
         tag :widow_control, W.define('widowControl', [:val])
         tag :numbering, NumberingProperties
+        tag :borders, ParagraphBorders
         tag :spacing, W.define('spacing', [:after, :before, :bottom, :line, :line_rule])
         tag :indent, W.define('ind', [:left, :right, :hanging, :first_line])
         tag :contextual_spacing, W.define('contextualSpacing', [:val])
@@ -204,6 +206,14 @@ module Docx
           self.rev_id_properties = '00000000'
           super(*args)
         end
+      end
+      class BookmarkStart < Tag
+        attributes :col_first, :col_last
+        attribute :name # , required: true
+        attribute :id # , required: true
+      end
+      class BookmarkEnd < Tag
+        attribute :id
       end
       class Paragraph < Tag
         type 'p'
